@@ -1,0 +1,82 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-petrol: var(--petrol);
+  --color-butter: var(--butter);
+  --color-ivory: var(--ivory);
+  --color-gold: var(--gold);
+  --color-charcoal: var(--charcoal);
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Jost", system-ui, sans-serif;
+}
+
+:root {
+  --radius: 0.625rem;
+  --petrol: oklch(0.34 0.055 228);      /* #0F3D4E */
+  --butter: oklch(0.96 0.06 95);        /* #FFF2BF */
+  --ivory: oklch(0.97 0.012 90);        /* #F8F5EC */
+  --gold: oklch(0.74 0.07 75);          /* #C9A876 */
+  --charcoal: oklch(0.26 0 0);          /* #252525 */
+  --background: var(--ivory);
+  --foreground: var(--charcoal);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--charcoal);
+  --primary: var(--petrol);
+  --primary-foreground: var(--ivory);
+  --secondary: var(--butter);
+  --secondary-foreground: var(--petrol);
+  --muted: oklch(0.94 0.015 90);
+  --muted-foreground: oklch(0.48 0.01 80);
+  --accent: var(--gold);
+  --accent-foreground: var(--charcoal);
+  --destructive: oklch(0.55 0.2 27);
+  --border: oklch(0.88 0.025 85);
+  --input: oklch(0.85 0.025 85);
+  --ring: var(--gold);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body { overflow-x: hidden; }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3 { font-family: var(--font-serif); font-weight: 500; }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
