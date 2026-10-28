@@ -19,6 +19,13 @@ import {
   type Inquiry,
   type Coupon,
 } from "./db";
+import {
+  saveProductToFirestore,
+  updateProductInFirestore,
+  deleteProductFromFirestore,
+  subscribeToProducts,
+  seedFirestoreIfEmpty,
+} from "./firebase";
 
 type Store = {
   // Products & Reviews
@@ -135,6 +142,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Load state from IndexedDB (for unlimited product/image storage) and localStorage on mount
   useEffect(() => {
     let isMounted = true;
+    let unsubscribeFirestore: (() => void) | null = null;
 
     async function initializeStore() {
       // 1. Instant optimistic load from localStorage if available
@@ -262,6 +270,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         console.warn("Could not load stored data from localStorage:", e);
       }
 
+      // 4. Authoritative Cloud Firestore real-time synchronization
+      try {
+        seedFirestoreIfEmpty(defaultProducts).catch(() => {});
+        unsubscribeFirestore = subscribeToProducts((cloudProds) => {
+          if (cloudProds && cloudProds.length > 0 && isMounted) {
+            setProducts(cloudProds);
+            idbSet(STORAGE_KEYS.PRODUCTS, cloudProds).catch(() => {});
+            try {
+              localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(cloudProds));
+            } catch {}
+          }
+        });
+      } catch (cloudErr) {
+        console.warn("[Firebase] Could not subscribe to Firestore products:", cloudErr);
+      }
+
       if (isMounted) {
         setHydrated(true);
       }
@@ -271,6 +295,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false;
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+      }
     };
   }, []);
 
@@ -628,7 +655,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const removeCoupon = () => setAppliedCoupon(null);
 
-  // Product CRUD (Admin)
+  // Product CRUD (Admin & Cloud Firestore)
   const addProduct = (p: Omit<Product, "id" | "createdAt">): Product => {
     const newProduct: Product = {
       ...p,
@@ -640,12 +667,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
       return next;
     });
+    saveProductToFirestore(newProduct).catch((err) => {
+      console.warn("[Firebase] Could not save product to Firestore:", err);
+    });
     return newProduct;
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
     setProducts((prev) => {
-      const next = prev.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      const next = prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated = { ...p, ...updates };
+        saveProductToFirestore(updated).catch((err) => {
+          console.warn("[Firebase] Could not update product in Firestore:", err);
+        });
+        return updated;
+      });
       idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
       return next;
     });
@@ -657,6 +694,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
       return next;
     });
+    deleteProductFromFirestore(id).catch((err) => {
+      console.warn("[Firebase] Could not delete product from Firestore:", err);
+    });
     removeFromCart(id);
     setWishlist((prev) => prev.filter((x) => x !== id));
   };
@@ -667,9 +707,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(defaultProducts));
     } catch {}
+    for (const prod of defaultProducts) {
+      saveProductToFirestore(prod).catch(() => {});
+    }
   };
 
-  // Product Reviews Management (Admin & Front-end)
+  // Product Reviews Management (Admin & Front-end with Firestore Cloud Persistence)
   const addReview = (productId: string, reviewData: Omit<Review, "id">) => {
     const newRev: Review = {
       ...reviewData,
@@ -683,12 +726,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const updatedReviews = [newRev, ...currentReviews];
         const sum = updatedReviews.reduce((acc, r) => acc + r.rating, 0);
         const avg = Number((sum / updatedReviews.length).toFixed(1));
-        return {
+        const updatedProduct: Product = {
           ...p,
           reviews: updatedReviews,
           reviewsCount: updatedReviews.length,
           rating: avg,
         };
+        saveProductToFirestore(updatedProduct).catch((err) => {
+          console.warn("[Firebase] Could not sync review to Firestore:", err);
+        });
+        return updatedProduct;
       });
       idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
       return next;
@@ -703,12 +750,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const updatedReviews = currentReviews.filter((r) => r.id !== reviewId);
         const sum = updatedReviews.reduce((acc, r) => acc + r.rating, 0);
         const avg = updatedReviews.length > 0 ? Number((sum / updatedReviews.length).toFixed(1)) : 5.0;
-        return {
+        const updatedProduct: Product = {
           ...p,
           reviews: updatedReviews,
           reviewsCount: updatedReviews.length,
           rating: avg,
         };
+        saveProductToFirestore(updatedProduct).catch((err) => {
+          console.warn("[Firebase] Could not sync review deletion to Firestore:", err);
+        });
+        return updatedProduct;
       });
       idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
       return next;

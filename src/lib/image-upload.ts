@@ -1,7 +1,10 @@
+import { uploadToFirebaseStorage } from "./firebase";
+
 /**
- * Client-side image upload and compression utility.
- * Reads local drive image files, resizes them if needed to prevent memory/storage bloat,
- * and converts them to crisp high-quality Data URLs for instant preview & persistent storage.
+ * Client-side image upload, compression, and Firebase Cloud Storage utility.
+ * Reads local drive image files, resizes them to prevent storage bloat,
+ * uploads them directly to Firebase Cloud Storage for permanent HTTPS CDN URLs,
+ * and falls back to optimized high-quality Data URLs if offline or cloud unavailable.
  */
 
 export function readFileAsDataURL(file: File): Promise<string> {
@@ -13,10 +16,17 @@ export function readFileAsDataURL(file: File): Promise<string> {
   });
 }
 
+function canvasToBlob(canvas: HTMLCanvasElement, type = "image/jpeg", quality = 0.82): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality);
+  });
+}
+
 export function processAndCompressImage(
   file: File,
-  maxDimension = 1000,
-  quality = 0.80
+  maxDimension = 1200,
+  quality = 0.82,
+  folder = "products"
 ): Promise<string> {
   return new Promise((resolve) => {
     // If it's an SVG vector, read directly as data URL without rasterizing
@@ -30,11 +40,11 @@ export function processAndCompressImage(
     const img = new Image();
     const url = URL.createObjectURL(file);
 
-    img.onload = () => {
+    img.onload = async () => {
       URL.revokeObjectURL(url);
       let { width, height } = img;
 
-      // Maintain aspect ratio while capping max dimension to 1000px (crisp retina quality)
+      // Maintain aspect ratio while capping max dimension to 1200px (crisp retina quality)
       if (width > maxDimension || height > maxDimension) {
         if (width > height) {
           height = Math.round((height * maxDimension) / width);
@@ -55,7 +65,7 @@ export function processAndCompressImage(
         return;
       }
 
-      // Fill with clean ivory/white background so transparent PNGs don't artifact or turn black
+      // Fill with clean white background so transparent PNGs don't artifact or turn black
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, width, height);
 
@@ -63,12 +73,29 @@ export function processAndCompressImage(
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Convert to JPEG with quality compression (reduces 3MB+ photos to crisp ~60KB-90KB)
+      let fallbackDataUrl = "";
       try {
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
+        fallbackDataUrl = canvas.toDataURL("image/jpeg", quality);
+      } catch {}
+
+      // Attempt direct upload to Firebase Cloud Storage for permanent HTTPS CDN URL
+      try {
+        const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+        if (blob) {
+          const cloudUrl = await uploadToFirebaseStorage(blob, folder, file.name);
+          if (cloudUrl) {
+            resolve(cloudUrl);
+            return;
+          }
+        }
       } catch (err) {
-        console.warn("Canvas toDataURL failed, falling back to direct reader:", err);
+        console.warn("[Firebase Storage] Cloud upload failed, using optimized local asset:", err);
+      }
+
+      // Fallback to data URL
+      if (fallbackDataUrl) {
+        resolve(fallbackDataUrl);
+      } else {
         readFileAsDataURL(file).then(resolve).catch(() => resolve(""));
       }
     };
@@ -84,11 +111,12 @@ export function processAndCompressImage(
 
 export async function processMultipleImageFiles(
   files: FileList | File[],
-  maxDimension = 1000,
-  quality = 0.80
+  maxDimension = 1200,
+  quality = 0.82,
+  folder = "products"
 ): Promise<string[]> {
   const fileArray = Array.from(files).filter((f) => f.type.startsWith("image/"));
-  const promises = fileArray.map((f) => processAndCompressImage(f, maxDimension, quality));
+  const promises = fileArray.map((f) => processAndCompressImage(f, maxDimension, quality, folder));
   const results = await Promise.all(promises);
   return results.filter((url) => Boolean(url));
 }

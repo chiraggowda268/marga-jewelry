@@ -1906,7 +1906,7 @@ function AdminPage() {
                         if (e.target.files && e.target.files.length > 0) {
                           setIsUploadingImages(true);
                           try {
-                            const newUrls = await processMultipleImageFiles(e.target.files);
+                            const newUrls = await processMultipleImageFiles(e.target.files, 1200, 0.82, 'products');
                             setFormData((prev) => {
                               const combined = [...prev.images, ...newUrls];
                               const primary = combined[0] ?? prev.image;
@@ -2393,7 +2393,7 @@ function AdminPage() {
                       if (e.target.files && e.target.files.length > 0) {
                         setIsUploadingReviewPhotos(true);
                         try {
-                          const urls = await processMultipleImageFiles(e.target.files);
+                          const urls = await processMultipleImageFiles(e.target.files, 1200, 0.82, 'reviews');
                           setReviewFormData((prev) => ({
                             ...prev,
                             images: [...prev.images, ...urls],

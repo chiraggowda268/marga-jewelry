@@ -1,12 +1,16 @@
-import necklace from "@/assets/necklace.jpg";
+import p1Img from "@/assets/products/p1_full.jpg";
+import p2Img from "@/assets/products/p2_full.jpg";
+import p3Img from "@/assets/products/p3_full.jpg";
+import p4Img from "@/assets/products/p4_full.jpg";
+import p5Img from "@/assets/products/p5_full.jpg";
+import p6Img from "@/assets/products/p6_full.jpg";
+import p7Img from "@/assets/products/p7_full.jpg";
+import p8Img from "@/assets/products/p8_full.jpg";
+import p9Img from "@/assets/products/p9_full.jpg";
+
 import earrings from "@/assets/earrings.jpg";
 import bracelet from "@/assets/bracelet.jpg";
 import ring from "@/assets/ring.jpg";
-import layering from "@/assets/layering.jpg";
-import everyday from "@/assets/everyday.jpg";
-import editorial from "@/assets/editorial.jpg";
-import hero from "@/assets/hero.jpg";
-import promo from "@/assets/promo.jpg";
 
 import {
   type Review,
@@ -31,12 +35,12 @@ export type Category = {
 };
 
 export const defaultCategories: Category[] = [
-  { slug: "necklaces", name: "Necklaces", image: necklace, description: "Delicate chains, pendants and chokers" },
+  { slug: "necklaces", name: "Necklaces", image: p1Img, description: "Delicate chains, pendants and necklace sets" },
   { slug: "earrings", name: "Earrings", image: earrings, description: "Everyday studs, huggies and bold hoops" },
   { slug: "bracelets", name: "Bracelets", image: bracelet, description: "Minimalist chains, cuffs and tennis styles" },
   { slug: "rings", name: "Rings", image: ring, description: "Stackable bands, signets and solitaire gems" },
-  { slug: "layering-sets", name: "Layering Sets", image: layering, description: "Curated multi-tier jewelry styling" },
-  { slug: "everyday-edit", name: "Everyday Edit", image: everyday, description: "Effortless pieces designed for daily wear" },
+  { slug: "layering-sets", name: "Layering Sets", image: p4Img, description: "Curated multi-tier jewelry styling" },
+  { slug: "everyday-edit", name: "Everyday Edit", image: p5Img, description: "Effortless pieces designed for daily wear" },
 ];
 
 export type Product = {
@@ -66,7 +70,7 @@ export const defaultProducts: Product[] = [
     slug: "emerald-leaf-elegance-necklace-set",
     price: 2799,
     originalPrice: 3499,
-    image: necklace,
+    image: p1Img,
     category: "necklaces",
     description: "A radiant gold necklace with meticulously cut emerald-green crystal stones and sculpted leaf accents, complete with matching earrings.",
     material: "18K Gold Plated Brass, Emerald Green Zirconia & Austrian Crystals",
@@ -89,7 +93,7 @@ export const defaultProducts: Product[] = [
     slug: "crystal-leaf-glow-necklace-set",
     price: 2599,
     originalPrice: 3299,
-    image: necklace,
+    image: p2Img,
     category: "necklaces",
     description: "Luminous brilliant-cut white crystals arranged in a graceful leaf motif, accompanied by matching delicate earrings.",
     material: "18K Gold Vermeil & AAAAA Faceted White Zirconia Crystals",
@@ -112,7 +116,7 @@ export const defaultProducts: Product[] = [
     slug: "emerald-floral-charm-necklace-set",
     price: 2699,
     originalPrice: 3399,
-    image: layering,
+    image: p3Img,
     category: "necklaces",
     description: "An enchanting blend of floral charm motifs adorned with rich green stones and golden petals, paired with coordinated studs.",
     material: "18K Gold Plated 925 Sterling Silver & Emerald Crystals",
@@ -135,7 +139,7 @@ export const defaultProducts: Product[] = [
     slug: "emerald-vine-elegance-necklace-set",
     price: 2899,
     originalPrice: 3699,
-    image: necklace,
+    image: p4Img,
     category: "necklaces",
     description: "An undulating vine of alternating emerald green and sparkling clear crystals designed to drape effortlessly along the collarbone.",
     material: "18K Gold Vermeil, Green Tourmaline Zirconia & Pavé Crystals",
@@ -158,7 +162,7 @@ export const defaultProducts: Product[] = [
     slug: "golden-blossom-crystal-necklace-set",
     price: 2999,
     originalPrice: 3899,
-    image: promo,
+    image: p5Img,
     category: "necklaces",
     description: "A continuous strand of sculpted golden blossoms centered with sparkling crystals and a statement floral pendant with earrings.",
     material: "18K Gold Plated Brass & Pavé Cut Crystals",
@@ -181,7 +185,7 @@ export const defaultProducts: Product[] = [
     slug: "daisy-bloom-crystal-necklace-set",
     price: 2499,
     originalPrice: 2999,
-    image: everyday,
+    image: p6Img,
     category: "necklaces",
     description: "Playful yet refined daisy blossoms glistening with clear crystals, paired with adorable matching daisy earrings.",
     material: "18K Gold Plated Brass & Pavé Cut White Crystals",
@@ -204,7 +208,7 @@ export const defaultProducts: Product[] = [
     slug: "pink-blossom-royale-necklace-set",
     price: 2999,
     originalPrice: 3899,
-    image: editorial,
+    image: p7Img,
     category: "necklaces",
     description: "Regal blush-pink gemstones entwined with brilliant crystals in a feminine floral silhouette, accompanied by matching earrings.",
     material: "18K Gold Vermeil, Rose Quartz Simulated Stones & Crystals",
@@ -227,7 +231,7 @@ export const defaultProducts: Product[] = [
     slug: "ruby-emerald-floral-necklace-set",
     price: 2899,
     originalPrice: 3799,
-    image: hero,
+    image: p9Img,
     category: "necklaces",
     description: "A festive contrast of vibrant ruby-pink and deep emerald-green floral stones set in polished 18K gold vermeil with matching studs.",
     material: "18K Gold Vermeil, Simulated Ruby & Emerald Zirconia",
@@ -250,7 +254,7 @@ export const defaultProducts: Product[] = [
     slug: "blush-petal-elegance-necklace-set",
     price: 2599,
     originalPrice: 3399,
-    image: necklace,
+    image: p8Img,
     category: "necklaces",
     description: "Subtle blush-pink petals accented with sparkling white crystals for a graceful, modern romantic aesthetic with earrings.",
     material: "18K Gold Plated Brass & Soft Blush Zirconia",
@@ -266,138 +270,6 @@ export const defaultProducts: Product[] = [
       "Hypoallergenic and tarnish-resistant",
     ],
     createdAt: "2026-03-09T10:00:00Z",
-  },
-  {
-    id: "p1",
-    name: "Pearl Leaf Pendant",
-    slug: "pearl-leaf-pendant",
-    price: 2499,
-    originalPrice: 3299,
-    image: necklace,
-    category: "necklaces",
-    description: "A freshwater baroque pearl cradled in sculpted 18K gold vermeil leaf setting. Elegant, timeless, and organic.",
-    material: "18K Gold Vermeil over 925 Sterling Silver & Cultured Baroque Pearl",
-    stock: 24,
-    badge: "Bestseller",
-    rating: 4.9,
-    reviewsCount: 42,
-    details: [
-      "18K Gold Vermeil over 925 Sterling Silver",
-      "Authentic Cultured Freshwater Pearl",
-      "Chain length: 16-18 inches (adjustable)",
-      "Hypoallergenic & 100% Nickel-free",
-      "Anti-tarnish protective coating",
-    ],
-    createdAt: "2026-01-15T10:00:00Z",
-  },
-  {
-    id: "p2",
-    name: "Bold Gold Hoops",
-    slug: "bold-gold-hoops",
-    price: 1899,
-    originalPrice: 2499,
-    image: earrings,
-    category: "earrings",
-    description: "Chunky hollow hoops that make a statement while remaining weightless on your earlobes from morning till night.",
-    material: "18K Gold Plated Brass",
-    stock: 18,
-    badge: "Trending",
-    rating: 4.8,
-    reviewsCount: 38,
-    details: [
-      "18K Yellow Gold thick plating",
-      "Hollow featherweight construction (under 4g per hoop)",
-      "Diameter: 22mm",
-      "Comfort click-latch closure",
-      "Water & sweat resistant finish",
-    ],
-    createdAt: "2026-01-20T11:30:00Z",
-  },
-  {
-    id: "p3",
-    name: "Solitaire Chain Bracelet",
-    slug: "solitaire-chain-bracelet",
-    price: 1699,
-    originalPrice: 2199,
-    image: bracelet,
-    category: "bracelets",
-    description: "A delicate cable chain centered with a bezel-set faceted zirconia solitaire that catches the light with every gesture.",
-    material: "18K Gold Vermeil & AAAAA Cubic Zirconia",
-    stock: 15,
-    rating: 4.7,
-    reviewsCount: 29,
-    details: [
-      "Adjustable slider clasp fits wrists 5.5 to 7.5 inches",
-      "Brilliant-cut round solitaire stone (4mm)",
-      "Micro-cable chain link strength tested",
-      "Tarnish-resistant coating",
-    ],
-    createdAt: "2026-02-01T14:15:00Z",
-  },
-  {
-    id: "p4",
-    name: "Petite Solitaire Ring",
-    slug: "petite-solitaire-ring",
-    price: 1499,
-    originalPrice: 1999,
-    image: ring,
-    category: "rings",
-    description: "A whisper-thin band crowned with a low-profile solitaire stone. Ideal for minimalists or stacking with your favorite bands.",
-    material: "18K Gold Plated 925 Sterling Silver",
-    stock: 30,
-    badge: "New",
-    rating: 4.9,
-    reviewsCount: 51,
-    details: [
-      "Band thickness: 1.2mm ultra-fine band",
-      "Solid 925 sterling silver base",
-      "Prong-set simulated diamond",
-      "Comfort-fit rounded inner profile",
-    ],
-    createdAt: "2026-02-10T09:45:00Z",
-  },
-  {
-    id: "p5",
-    name: "Triple Layer Set",
-    slug: "triple-layer-set",
-    price: 3299,
-    originalPrice: 4299,
-    image: layering,
-    category: "layering-sets",
-    description: "Three harmoniously tiered necklaces designed to create the effortless golden stack without tangling.",
-    material: "18K Gold Plated Brass with Anti-Tarnish Seal",
-    stock: 12,
-    badge: "Bestseller",
-    rating: 5.0,
-    reviewsCount: 64,
-    details: [
-      "Includes 3 separate necklaces: Herringbone, Figaro, and Solitaire Drop",
-      "Lengths: 14\", 16\", 18\" with 2\" extenders each",
-      "Can be worn individually or layered together",
-      "High-luster mirror polish",
-    ],
-    createdAt: "2026-02-18T16:20:00Z",
-  },
-  {
-    id: "p6",
-    name: "Huggie & Stud Duo",
-    slug: "huggie-stud-duo",
-    price: 1299,
-    originalPrice: 1699,
-    image: everyday,
-    category: "everyday-edit",
-    description: "The quintessential ear stack starter kit. Features a micro pave huggie alongside classic sparkling crystal studs.",
-    material: "18K Gold Plated Brass & Pavé Crystals",
-    stock: 22,
-    rating: 4.8,
-    reviewsCount: 31,
-    details: [
-      "1 pair 10mm clicker huggies + 1 pair 3mm stud earrings",
-      "Hypoallergenic surgical steel posts",
-      "Secure hinge click closure on huggies",
-      "Signature Marga luxury pouch included",
-    ],
-    createdAt: "2026-02-25T12:00:00Z",
   },
 ];
 
