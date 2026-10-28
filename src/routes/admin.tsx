@@ -28,9 +28,12 @@ import {
   Tag,
   UploadCloud,
   Percent,
+  Star,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { processMultipleImageFiles } from "@/lib/image-upload";
+import { getProductReviews, type Review } from "@/lib/reviews-data";
 import {
   defaultCategories,
   formatINR,
@@ -82,6 +85,8 @@ function AdminPage() {
     updateProduct,
     deleteProduct,
     resetCatalog,
+    addReview,
+    deleteReview,
     orders,
     updateOrderStatus,
     resetOrders,
@@ -94,7 +99,7 @@ function AdminPage() {
     changeAdminPassword,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "coupons" | "inquiries" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "reviews" | "orders" | "coupons" | "inquiries" | "settings">("dashboard");
 
   // Admin Auth inputs (for unauthenticated state)
   const [adminIdentifier, setAdminIdentifier] = useState("chirag");
@@ -130,6 +135,29 @@ function AdminPage() {
       setProductToast((cur) => (cur === msg ? null : cur));
     }, 3500);
   };
+
+  // Reviews Tab states
+  const [selectedReviewProductId, setSelectedReviewProductId] = useState<string>("all");
+  const [reviewSearchQuery, setReviewSearchQuery] = useState("");
+  const [reviewRatingFilter, setReviewRatingFilter] = useState<string>("all");
+  const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false);
+  const [isUploadingReviewPhotos, setIsUploadingReviewPhotos] = useState(false);
+  const [adminReviewLightbox, setAdminReviewLightbox] = useState<string | null>(null);
+  const [deleteReviewConfirm, setDeleteReviewConfirm] = useState<{
+    productId: string;
+    reviewId: string;
+    author: string;
+  } | null>(null);
+
+  const [reviewFormData, setReviewFormData] = useState({
+    productId: "",
+    author: "",
+    rating: 5,
+    date: "2 days ago",
+    comment: "",
+    verified: true,
+    images: [] as string[],
+  });
 
   // Promo Codes / Coupons Tab states
   const [isAddCouponModalOpen, setIsAddCouponModalOpen] = useState(false);
@@ -413,6 +441,61 @@ function AdminPage() {
     return matchStatus && matchSearch;
   });
 
+  // Aggregated Customer Reviews across all products
+  const allReviewsWithProduct = products.flatMap((prod) => {
+    const list = getProductReviews(prod);
+    return list.map((rev) => ({
+      ...rev,
+      product: prod,
+    }));
+  });
+
+  const filteredReviews = allReviewsWithProduct.filter((item) => {
+    const matchProduct = selectedReviewProductId === "all" || item.product.id === selectedReviewProductId;
+    const matchRating = reviewRatingFilter === "all" || Math.round(item.rating) === Number(reviewRatingFilter);
+    const matchSearch =
+      !reviewSearchQuery ||
+      item.author.toLowerCase().includes(reviewSearchQuery.toLowerCase()) ||
+      item.comment.toLowerCase().includes(reviewSearchQuery.toLowerCase()) ||
+      item.product.name.toLowerCase().includes(reviewSearchQuery.toLowerCase());
+    return matchProduct && matchRating && matchSearch;
+  });
+
+  const totalReviewsCount = allReviewsWithProduct.length;
+  const reviewsWithPhotosCount = allReviewsWithProduct.filter((r) => r.images && r.images.length > 0).length;
+
+  const handleSaveReview = (e: FormEvent) => {
+    e.preventDefault();
+    if (!reviewFormData.productId || !reviewFormData.author.trim() || !reviewFormData.comment.trim()) {
+      return;
+    }
+
+    addReview(reviewFormData.productId, {
+      author: reviewFormData.author.trim(),
+      rating: Number(reviewFormData.rating),
+      date: reviewFormData.date.trim() || "Today",
+      comment: reviewFormData.comment.trim(),
+      verified: reviewFormData.verified,
+      images: reviewFormData.images.length > 0 ? reviewFormData.images : undefined,
+    });
+
+    const targetProd = products.find((p) => p.id === reviewFormData.productId);
+    showProductToast(
+      `Review by ${reviewFormData.author.trim()} added to "${targetProd?.name || "Product"}" with ${reviewFormData.images.length} photos.`
+    );
+
+    setIsAddReviewModalOpen(false);
+    setReviewFormData({
+      productId: products[0]?.id || "",
+      author: "",
+      rating: 5,
+      date: "2 days ago",
+      comment: "",
+      verified: true,
+      images: [],
+    });
+  };
+
   return (
     <div className="min-h-screen bg-ivory">
       {/* Top Admin Sub-bar */}
@@ -462,6 +545,22 @@ function AdminPage() {
             }`}
           >
             <ShoppingBag size={16} /> Products ({products.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`flex items-center gap-2 border-b-2 px-5 py-3 eyebrow text-xs transition-colors whitespace-nowrap ${
+              activeTab === "reviews"
+                ? "border-petrol text-petrol font-semibold bg-card/60 rounded-t-lg"
+                : "border-transparent text-muted-foreground hover:text-charcoal"
+            }`}
+          >
+            <Star size={16} /> Customer Reviews ({totalReviewsCount})
+            {reviewsWithPhotosCount > 0 && (
+              <span className="rounded-full bg-gold/20 text-charcoal px-1.5 py-0.2 text-[10px] font-bold">
+                {reviewsWithPhotosCount} photos
+              </span>
+            )}
           </button>
 
           <button
@@ -791,6 +890,11 @@ function AdminPage() {
                           <div>
                             <p className="font-serif text-sm text-charcoal font-medium">{p.name}</p>
                             <p className="text-[11px] text-muted-foreground line-clamp-1">{p.material}</p>
+                            <div className="flex items-center gap-1 text-[11px] text-amber-600 font-medium mt-0.5">
+                              <Star size={11} className="fill-amber-500 text-amber-500" />
+                              <span>{p.rating || 4.9}</span>
+                              <span className="text-muted-foreground font-normal">({getProductReviews(p).length} reviews)</span>
+                            </div>
                           </div>
                         </td>
 
@@ -833,6 +937,16 @@ function AdminPage() {
 
                         <td className="py-3 px-4 text-right space-x-2">
                           <button
+                            onClick={() => {
+                              setSelectedReviewProductId(p.id);
+                              setActiveTab("reviews");
+                            }}
+                            className="rounded-md border border-border p-1.5 text-charcoal hover:bg-gold/15 hover:text-petrol transition-colors"
+                            title={`Manage reviews for ${p.name}`}
+                          >
+                            <Star size={15} />
+                          </button>
+                          <button
                             onClick={() => openEditModal(p)}
                             className="rounded-md border border-border p-1.5 text-charcoal hover:bg-muted hover:text-petrol transition-colors"
                             title="Edit product"
@@ -853,6 +967,241 @@ function AdminPage() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: REVIEWS MANAGEMENT & UGC PHOTOS */}
+        {/* ============================================================== */}
+        {activeTab === "reviews" && (
+          <div className="mt-8 space-y-6 animate-in fade-in duration-150">
+            {/* Header: Title and Add Review Button */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
+              <div>
+                <h2 className="font-serif text-2xl text-petrol">Customer Reviews & Visual Feedback</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Curate authentic customer reviews and upload wear photos for each jewelry piece in your catalog.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setReviewFormData({
+                    productId: selectedReviewProductId !== "all" ? selectedReviewProductId : (products[0]?.id || ""),
+                    author: "",
+                    rating: 5,
+                    date: "Today",
+                    comment: "",
+                    verified: true,
+                    images: [],
+                  });
+                  setIsAddReviewModalOpen(true);
+                }}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-petrol px-4 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs shrink-0"
+              >
+                <Plus size={16} /> Add New Review
+              </button>
+            </div>
+
+            {/* KPI Metric Cards for Reviews */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="eyebrow text-xs">Total Reviews</span>
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-amber-50 text-amber-700">
+                    <MessageSquare size={18} />
+                  </div>
+                </div>
+                <p className="mt-3 font-serif text-2xl text-petrol font-semibold">{totalReviewsCount}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Across all live products</p>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="eyebrow text-xs">Average Rating</span>
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-amber-50 text-amber-700">
+                    <Star size={18} className="fill-amber-500 text-amber-500" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <p className="font-serif text-2xl text-petrol font-semibold">4.9</p>
+                  <span className="text-xs text-amber-600 font-medium">★★★★★</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Customer satisfaction score</p>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="eyebrow text-xs">Reviews with Photos</span>
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+                    <ImageIcon size={18} />
+                  </div>
+                </div>
+                <p className="mt-3 font-serif text-2xl text-petrol font-semibold">{reviewsWithPhotosCount}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Real wear & styling images</p>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="eyebrow text-xs">Verified Rate</span>
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-50 text-blue-700">
+                    <CheckCircle2 size={18} />
+                  </div>
+                </div>
+                <p className="mt-3 font-serif text-2xl text-petrol font-semibold">100%</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Confirmed buyer badges</p>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="flex flex-1 flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[240px]">
+                  <Search size={16} className="absolute left-3 top-3 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search by customer name, text, or piece title…"
+                    value={reviewSearchQuery}
+                    onChange={(e) => setReviewSearchQuery(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-input bg-card pl-9 pr-3 text-xs outline-none focus:border-gold"
+                  />
+                </div>
+
+                <select
+                  value={selectedReviewProductId}
+                  onChange={(e) => setSelectedReviewProductId(e.target.value)}
+                  className="h-10 rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold max-w-xs"
+                >
+                  <option value="all">All Pieces ({products.length})</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={reviewRatingFilter}
+                  onChange={(e) => setReviewRatingFilter(e.target.value)}
+                  className="h-10 rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
+                >
+                  <option value="all">All Ratings</option>
+                  <option value="5">5 Stars only</option>
+                  <option value="4">4 Stars</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Reviews List */}
+            {filteredReviews.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border bg-card/60 p-12 text-center text-muted-foreground text-xs">
+                No reviews match your selected filter. Click "+ Add New Review" to publish one with customer photos.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredReviews.map((item) => (
+                  <div
+                    key={`${item.product.id}_${item.id}`}
+                    className="flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-2xs hover:border-gold/50 transition-all hover:shadow-xs"
+                  >
+                    <div>
+                      {/* Product Header Row */}
+                      <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+                        <img
+                          src={item.product.image}
+                          alt={item.product.name}
+                          className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-serif text-xs text-charcoal font-semibold truncate">
+                            {item.product.name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground capitalize">
+                            {item.product.category.replace("-", " ")} • {formatINR(item.product.price)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() =>
+                            setDeleteReviewConfirm({
+                              productId: item.product.id,
+                              reviewId: item.id,
+                              author: item.author,
+                            })
+                          }
+                          className="rounded-md border border-border p-1.5 text-charcoal hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          title="Delete this review"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+
+                      {/* Reviewer Info (Indian Name + Verified Badge) */}
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <p className="font-serif text-sm font-semibold text-petrol">
+                          {item.author}
+                        </p>
+                        {item.verified !== false && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-800 border border-emerald-200/70">
+                            <CheckCircle2 size={10} className="text-emerald-600" />
+                            Verified Buyer
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Rating & Date */}
+                      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-0.5 text-amber-500">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={12}
+                              className={
+                                s <= Math.round(item.rating)
+                                  ? "text-amber-500 fill-amber-500"
+                                  : "text-muted-foreground/30"
+                              }
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">{item.date}</span>
+                      </div>
+
+                      {/* Review Comment */}
+                      <p className="mt-3 text-xs leading-relaxed text-charcoal/85 italic">
+                        “{item.comment.replace(/^["“”]|["“”]$/g, "")}”
+                      </p>
+
+                      {/* Attached Customer Wear Photos */}
+                      {item.images && item.images.length > 0 && (
+                        <div className="mt-3 pt-2">
+                          <p className="text-[10px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                            <ImageIcon size={12} className="text-gold" />
+                            <span>Customer Wear Photos ({item.images.length}):</span>
+                          </p>
+                          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                            {item.images.map((photo, pIdx) => (
+                              <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => setAdminReviewLightbox(photo)}
+                                className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border shadow-2xs hover:scale-105 hover:border-gold transition-all"
+                                title="Click to view full photo"
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`${item.author} wear photo ${pIdx + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1881,6 +2230,283 @@ function AdminPage() {
           </div>
         </div>
       )}
+      {/* ============================================================== */}
+      {/* MODAL: ADD CUSTOMER REVIEW WITH PHOTOS */}
+      {/* ============================================================== */}
+      {isAddReviewModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setIsAddReviewModalOpen(false)}
+        >
+          <div
+            className="relative max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-ivory p-6 md:p-8 shadow-2xl no-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div>
+                <h3 className="font-serif text-2xl text-petrol">Add Customer Review</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Publish a review with authentic Indian customer names and wear photos.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsAddReviewModalOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted text-charcoal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReview} className="mt-6 space-y-4 text-xs">
+              {/* Product Selection */}
+              <div>
+                <label className="mb-1 block eyebrow text-muted-foreground">Select Jewelry Piece *</label>
+                <select
+                  required
+                  value={reviewFormData.productId}
+                  onChange={(e) => setReviewFormData({ ...reviewFormData, productId: e.target.value })}
+                  className="h-11 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
+                >
+                  <option value="" disabled>Choose a product…</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({formatINR(p.price)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Customer Name & Rating */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block eyebrow text-muted-foreground">Customer Name (Indian) *</label>
+                  <input
+                    required
+                    value={reviewFormData.author}
+                    onChange={(e) => setReviewFormData({ ...reviewFormData, author: e.target.value })}
+                    placeholder="e.g. Priya Sharma, Ananya Rao"
+                    className="h-10 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block eyebrow text-muted-foreground">Rating *</label>
+                  <div className="flex items-center gap-1.5 h-10 px-2 bg-card border border-input rounded-lg">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewFormData({ ...reviewFormData, rating: star })}
+                        className="p-1 hover:scale-110 transition-transform"
+                        title={`${star} stars`}
+                      >
+                        <Star
+                          size={18}
+                          className={`${
+                            star <= reviewFormData.rating
+                              ? "text-amber-500 fill-amber-500"
+                              : "text-muted-foreground/30"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    <span className="ml-auto text-xs text-muted-foreground font-semibold">
+                      {reviewFormData.rating} / 5
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date & Verified Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block eyebrow text-muted-foreground">Date Display *</label>
+                  <input
+                    required
+                    value={reviewFormData.date}
+                    onChange={(e) => setReviewFormData({ ...reviewFormData, date: e.target.value })}
+                    placeholder="e.g. Today, 3 days ago, 1 week ago"
+                    className="h-10 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
+                  />
+                </div>
+
+                <div className="flex items-center pt-5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-charcoal">
+                    <input
+                      type="checkbox"
+                      checked={reviewFormData.verified}
+                      onChange={(e) => setReviewFormData({ ...reviewFormData, verified: e.target.checked })}
+                      className="rounded border-input text-petrol focus:ring-gold"
+                    />
+                    <span className="font-medium">Mark as Verified Buyer Badge</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Review Comment Text */}
+              <div>
+                <label className="mb-1 block eyebrow text-muted-foreground">Review Content / Feedback *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={reviewFormData.comment}
+                  onChange={(e) => setReviewFormData({ ...reviewFormData, comment: e.target.value })}
+                  placeholder="e.g. Loved the green stones and gold plating. Looked stunning with my saree!"
+                  className="w-full rounded-lg border border-input bg-card p-3 text-xs text-charcoal outline-none focus:border-gold"
+                />
+              </div>
+
+              {/* Customer Photos Upload */}
+              <div>
+                <label className="mb-1 block eyebrow text-muted-foreground">
+                  Attach Customer Wear Photos (Optional)
+                </label>
+                <label className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-card px-3 text-xs text-muted-foreground hover:border-gold hover:text-charcoal transition-colors">
+                  <UploadCloud size={16} />
+                  <span>
+                    {isUploadingReviewPhotos ? "Compressing & Optimizing Photos…" : "Upload Wear Photos From Computer"}
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setIsUploadingReviewPhotos(true);
+                        try {
+                          const urls = await processMultipleImageFiles(e.target.files);
+                          setReviewFormData((prev) => ({
+                            ...prev,
+                            images: [...prev.images, ...urls],
+                          }));
+                        } catch (err) {
+                          console.error("Failed to upload review photos:", err);
+                        } finally {
+                          setIsUploadingReviewPhotos(false);
+                          e.target.value = "";
+                        }
+                      }
+                    }}
+                  />
+                </label>
+
+                {/* Uploaded Review Photos Preview */}
+                {reviewFormData.images.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-1">
+                    {reviewFormData.images.map((photoUrl, i) => (
+                      <div key={i} className="relative h-14 w-14 rounded-lg overflow-hidden border border-border group">
+                        <img src={photoUrl} alt="Review upload" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReviewFormData((prev) => ({
+                              ...prev,
+                              images: prev.images.filter((_, idx) => idx !== i),
+                            }))
+                          }
+                          className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-charcoal/80 text-ivory text-[10px] hover:bg-destructive transition-colors"
+                          title="Remove photo"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 flex justify-end gap-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsAddReviewModalOpen(false)}
+                  className="rounded-lg border border-border px-5 py-2.5 eyebrow text-xs text-charcoal hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploadingReviewPhotos}
+                  className="rounded-lg bg-petrol px-6 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs disabled:opacity-50"
+                >
+                  Publish Review
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: DELETE REVIEW CONFIRMATION */}
+      {/* ============================================================== */}
+      {deleteReviewConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setDeleteReviewConfirm(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-ivory p-6 shadow-2xl text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-rose-100 text-destructive mb-3">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="font-serif text-xl text-petrol">Delete Review?</h3>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Remove the review by <span className="font-semibold text-charcoal">{deleteReviewConfirm.author}</span> from the storefront?
+            </p>
+
+            <div className="mt-6 flex justify-center gap-3">
+              <button
+                onClick={() => setDeleteReviewConfirm(null)}
+                className="rounded-lg border border-border px-4 py-2 eyebrow text-xs text-charcoal hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  deleteReview(deleteReviewConfirm.productId, deleteReviewConfirm.reviewId);
+                  setDeleteReviewConfirm(null);
+                  showProductToast("Review removed from product.");
+                }}
+                className="rounded-lg bg-destructive px-5 py-2 eyebrow text-xs text-ivory hover:opacity-90"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: ADMIN PHOTO LIGHTBOX */}
+      {/* ============================================================== */}
+      {adminReviewLightbox && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center bg-charcoal/80 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setAdminReviewLightbox(null)}
+        >
+          <div
+            className="relative max-h-[85vh] max-w-2xl overflow-hidden rounded-2xl bg-ivory p-2 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setAdminReviewLightbox(null)}
+              className="absolute top-4 right-4 z-10 grid h-9 w-9 place-items-center rounded-full bg-charcoal/70 text-ivory hover:bg-charcoal transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <img
+              src={adminReviewLightbox}
+              alt="Customer review photo zoomed"
+              className="max-h-[80vh] w-full rounded-xl object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Floating Status Toast for Product & Catalog Actions */}
       {productToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-petrol px-4 py-3 text-xs text-ivory shadow-2xl border border-gold/30 animate-in slide-in-from-bottom-3 duration-200">

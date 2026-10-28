@@ -10,7 +10,8 @@ export type Review = {
   rating: number;
   date: string;
   comment: string;
-  verified?: boolean;
+  verified?: boolean | undefined;
+  images?: string[] | undefined; // Optional customer wear photos attached to the review
 };
 
 // 1. Emerald Leaf Elegance Necklace Set (7 reviews)

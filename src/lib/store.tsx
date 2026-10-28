@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { idbGet, idbSet } from "./idb";
+import { getProductReviews, type Review } from "./reviews-data";
 import {
   defaultProducts,
   defaultUsers,
@@ -20,12 +21,14 @@ import {
 } from "./db";
 
 type Store = {
-  // Products
+  // Products & Reviews
   products: Product[];
   addProduct: (product: Omit<Product, "id" | "createdAt">) => Product;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   resetCatalog: () => void;
+  addReview: (productId: string, review: Omit<Review, "id">) => void;
+  deleteReview: (productId: string, reviewId: string) => void;
 
   // Auth & User
   currentUser: User | null;
@@ -280,17 +283,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.warn("Could not save products to IndexedDB:", err);
     });
 
-    // 2. Best-effort sync to localStorage
+    // 2. Best-effort sync to localStorage without deleting existing items
     try {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
     } catch (err) {
-      // If localStorage 5MB quota is exceeded, clean up the bloated key so other keys (cart, auth) keep working
+      // If localStorage quota is reached, IndexedDB holds the authoritative copy safely
       console.warn(
         "localStorage quota reached for products. Product catalog is safely persisted in IndexedDB."
       );
-      try {
-        localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
-      } catch {}
     }
   }, [products, hydrated]);
 
@@ -669,6 +669,52 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
+  // Product Reviews Management (Admin & Front-end)
+  const addReview = (productId: string, reviewData: Omit<Review, "id">) => {
+    const newRev: Review = {
+      ...reviewData,
+      id: `rev_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    };
+
+    setProducts((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== productId) return p;
+        const currentReviews = p.reviews && p.reviews.length > 0 ? p.reviews : getProductReviews(p);
+        const updatedReviews = [newRev, ...currentReviews];
+        const sum = updatedReviews.reduce((acc, r) => acc + r.rating, 0);
+        const avg = Number((sum / updatedReviews.length).toFixed(1));
+        return {
+          ...p,
+          reviews: updatedReviews,
+          reviewsCount: updatedReviews.length,
+          rating: avg,
+        };
+      });
+      idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
+      return next;
+    });
+  };
+
+  const deleteReview = (productId: string, reviewId: string) => {
+    setProducts((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== productId) return p;
+        const currentReviews = p.reviews && p.reviews.length > 0 ? p.reviews : getProductReviews(p);
+        const updatedReviews = currentReviews.filter((r) => r.id !== reviewId);
+        const sum = updatedReviews.reduce((acc, r) => acc + r.rating, 0);
+        const avg = updatedReviews.length > 0 ? Number((sum / updatedReviews.length).toFixed(1)) : 5.0;
+        return {
+          ...p,
+          reviews: updatedReviews,
+          reviewsCount: updatedReviews.length,
+          rating: avg,
+        };
+      });
+      idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
+      return next;
+    });
+  };
+
   // Orders
   const createOrder = (orderData: Omit<Order, "id" | "createdAt">): Order => {
     const newOrder: Order = {
@@ -724,6 +770,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         updateProduct,
         deleteProduct,
         resetCatalog,
+        addReview,
+        deleteReview,
         currentUser,
         login,
         register,
