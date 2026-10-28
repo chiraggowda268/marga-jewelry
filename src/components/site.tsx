@@ -344,23 +344,9 @@ function CartDrawer() {
 
         {/* Free Shipping Alert Bar */}
         <div className="bg-muted px-6 py-2.5 text-xs">
-          {remainingForFreeShipping === 0 ? (
-            <p className="text-petrol font-medium flex items-center gap-1.5">
-              <span>🎉</span> You've unlocked <strong>Free Express Shipping!</strong>
-            </p>
-          ) : (
-            <div className="space-y-1">
-              <p className="text-charcoal/80">
-                Add <strong>{formatINR(remainingForFreeShipping)}</strong> more to unlock Free Delivery
-              </p>
-              <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
-                <div
-                  className="h-full bg-gold transition-all duration-300"
-                  style={{ width: `${Math.min(100, (cartSubtotal / freeShippingThreshold) * 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
+          <p className="text-petrol font-medium flex items-center gap-1.5">
+            <span>🎉</span> <strong>FREE Express Shipping</strong> on all Prepaid Orders! (+₹50 for COD)
+          </p>
         </div>
 
         {/* Cart Items List */}
@@ -480,8 +466,8 @@ function CartDrawer() {
                 </div>
               )}
               <div className="flex justify-between">
-                <span>Estimated Shipping</span>
-                <span>{cartShipping === 0 ? "Free" : formatINR(cartShipping)}</span>
+                <span>Shipping</span>
+                <span className="font-semibold text-emerald-700">FREE (Prepaid)</span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-base font-serif text-petrol font-semibold">
                 <span>Total</span>

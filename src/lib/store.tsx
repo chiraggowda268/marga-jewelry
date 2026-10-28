@@ -391,8 +391,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Free shipping on orders >= ₹2,499
-  const cartShipping = cartSubtotal === 0 ? 0 : cartSubtotal >= 2499 ? 0 : 99;
+  // Free delivery on all prepaid orders (₹0 base shipping)
+  const cartShipping = 0;
   const cartTotal = Math.max(0, cartSubtotal - cartDiscount + cartShipping);
 
   // Cart operations
