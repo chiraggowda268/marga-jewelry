@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -12,9 +13,18 @@ import { useEffect, type ReactNode } from "react";
 
 import { Header, Footer } from "../components/site";
 import { ProductModal } from "../components/ProductModal";
+import { MaintenancePage } from "../components/MaintenancePage";
 import { StoreProvider } from "../lib/store";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+
+// ============================================================================
+// SITE INACTIVE / MAINTENANCE SWITCH
+// Set to true: Public storefront shows a luxury "Temporarily Inactive" screen.
+// Set to false: Entire store is live instantly with all products & cart.
+// (Admin portal at /admin remains accessible for store owners to manage items)
+// ============================================================================
+export const SITE_INACTIVE = true;
 
 function NotFoundComponent() {
   return (
@@ -119,6 +129,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+
+  // If website is inactive, show maintenance page for all public pages while allowing admin access
+  if (SITE_INACTIVE && !location.pathname.startsWith("/admin")) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <StoreProvider>
+          <MaintenancePage />
+        </StoreProvider>
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
