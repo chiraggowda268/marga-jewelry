@@ -29,8 +29,8 @@
   --color-ivory: var(--ivory);
   --color-gold: var(--gold);
   --color-charcoal: var(--charcoal);
-  --font-serif: "Cormorant Garamond", Georgia, serif;
-  --font-sans: "Jost", system-ui, sans-serif;
+  --font-serif: "Urbanist", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 :root {
@@ -65,8 +65,14 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3 { font-family: var(--font-serif); font-weight: 500; }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
 }
 
 @utility no-scrollbar {
@@ -75,8 +81,20 @@
 }
 
 @utility eyebrow {
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
   font-size: 0.75rem;
-  letter-spacing: 0.25em;
+  font-weight: 600;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+}
+
+/* Hide Netlify drawer & badge widgets if injected */
+iframe#netlify-drawer,
+div[data-netlify-drawer],
+.netlify-badge,
+[id*="netlify-identity-widget"],
+netlify-drawer {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }

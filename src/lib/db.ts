@@ -28,6 +28,7 @@ export type Product = {
   price: number;
   originalPrice?: number | undefined;
   image: string;
+  images?: string[] | undefined;
   category: string;
   description: string;
   material: string;

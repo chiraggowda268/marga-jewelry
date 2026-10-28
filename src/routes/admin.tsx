@@ -25,13 +25,18 @@ import {
   ArrowLeft,
   X,
   Sparkles,
+  Tag,
+  UploadCloud,
+  Percent,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { processMultipleImageFiles } from "@/lib/image-upload";
 import {
   defaultCategories,
   formatINR,
   type Product,
   type Order,
+  type Coupon,
   availableCoupons,
 } from "@/lib/db";
 
@@ -80,12 +85,16 @@ function AdminPage() {
     orders,
     updateOrderStatus,
     resetOrders,
+    coupons,
+    addCoupon,
+    deleteCoupon,
+    resetCoupons,
     inquiries,
     updateInquiryStatus,
     changeAdminPassword,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "inquiries" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "orders" | "coupons" | "inquiries" | "settings">("dashboard");
 
   // Admin Auth inputs (for unauthenticated state)
   const [adminIdentifier, setAdminIdentifier] = useState("chirag");
@@ -112,6 +121,26 @@ function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [productToast, setProductToast] = useState<string | null>(null);
+
+  const showProductToast = (msg: string) => {
+    setProductToast(msg);
+    setTimeout(() => {
+      setProductToast((cur) => (cur === msg ? null : cur));
+    }, 3500);
+  };
+
+  // Promo Codes / Coupons Tab states
+  const [isAddCouponModalOpen, setIsAddCouponModalOpen] = useState(false);
+  const [couponFormData, setCouponFormData] = useState({
+    code: "",
+    type: "percent" as "percent" | "flat",
+    value: 10,
+    minSpend: 1500,
+    description: "",
+  });
+  const [couponFeedback, setCouponFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Orders Tab states
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
@@ -127,7 +156,7 @@ function AdminPage() {
     stock: 20,
     badge: "" as "" | "Bestseller" | "New" | "Trending" | "Limited",
     image: necklaceImg,
-    customImageUrl: "",
+    images: [necklaceImg] as string[],
     description: "",
     material: "18K Gold Vermeil over 925 Sterling Silver",
   });
@@ -267,7 +296,8 @@ function AdminPage() {
   // Handle Add Product Form submission
   const handleSaveProduct = (e: FormEvent) => {
     e.preventDefault();
-    const finalImage = formData.customImageUrl.trim() || formData.image;
+    const finalImages = formData.images.length > 0 ? formData.images : [formData.image];
+    const finalPrimaryImage = finalImages[0] || formData.image || necklaceImg;
 
     if (editingProduct) {
       updateProduct(editingProduct.id, {
@@ -277,11 +307,14 @@ function AdminPage() {
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         stock: Number(formData.stock),
         badge: formData.badge || undefined,
-        image: finalImage,
+        image: finalPrimaryImage,
+        images: finalImages,
         description: formData.description.trim(),
         material: formData.material.trim(),
       });
       setEditingProduct(null);
+      setIsAddModalOpen(false);
+      showProductToast(`"${formData.name.trim()}" updated successfully.`);
     } else {
       addProduct({
         name: formData.name.trim(),
@@ -291,18 +324,20 @@ function AdminPage() {
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         stock: Number(formData.stock),
         badge: formData.badge || undefined,
-        image: finalImage,
+        image: finalPrimaryImage,
+        images: finalImages,
         description: formData.description.trim() || "Handcrafted everyday fine jewelry designed to layer and stack.",
         material: formData.material.trim() || "18K Gold Vermeil over 925 Sterling Silver",
         rating: 5.0,
         reviewsCount: 1,
         details: [
-          formData.material.trim(),
+          formData.material.trim() || "18K Gold Vermeil over 925 Sterling Silver",
           "Hypoallergenic & 100% Nickel-free",
           "Anti-tarnish protective coating",
         ],
       });
       setIsAddModalOpen(false);
+      showProductToast(`"${formData.name.trim()}" added to catalog.`);
     }
 
     // Reset form
@@ -315,7 +350,7 @@ function AdminPage() {
       stock: 20,
       badge: "",
       image: necklaceImg,
-      customImageUrl: "",
+      images: [necklaceImg],
       description: "",
       material: "18K Gold Vermeil over 925 Sterling Silver",
     });
@@ -323,6 +358,7 @@ function AdminPage() {
 
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
+    const existingImgs = p.images && p.images.length > 0 ? p.images : [p.image];
     setFormData({
       name: p.name,
       slug: p.slug,
@@ -332,10 +368,28 @@ function AdminPage() {
       stock: p.stock,
       badge: p.badge ?? "",
       image: p.image,
-      customImageUrl: p.image.startsWith("http") ? p.image : "",
+      images: existingImgs,
       description: p.description,
       material: p.material,
     });
+  };
+
+  const openAddModal = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: "",
+      slug: "",
+      category: "necklaces",
+      price: 1999,
+      originalPrice: 2499,
+      stock: 20,
+      badge: "",
+      image: necklaceImg,
+      images: [necklaceImg],
+      description: "",
+      material: "18K Gold Vermeil over 925 Sterling Silver",
+    });
+    setIsAddModalOpen(true);
   };
 
   // Filtered Products
@@ -424,6 +478,17 @@ function AdminPage() {
                 {pendingOrdersCount}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("coupons")}
+            className={`flex items-center gap-2 border-b-2 px-5 py-3 eyebrow text-xs transition-colors whitespace-nowrap ${
+              activeTab === "coupons"
+                ? "border-petrol text-petrol font-semibold bg-card/60 rounded-t-lg"
+                : "border-transparent text-muted-foreground hover:text-charcoal"
+            }`}
+          >
+            <Tag size={16} /> Promo Codes ({coupons.length})
           </button>
 
           <button
@@ -585,7 +650,7 @@ function AdminPage() {
                     <button
                       onClick={() => {
                         setActiveTab("products");
-                        setIsAddModalOpen(true);
+                        openAddModal();
                       }}
                       className="flex w-full items-center justify-between rounded-lg bg-petrol p-3 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors"
                     >
@@ -642,6 +707,16 @@ function AdminPage() {
         {/* ============================================================== */}
         {activeTab === "products" && (
           <div className="mt-8 space-y-6 animate-in fade-in duration-150">
+            {/* Header: Title and Product Count */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/40">
+              <div>
+                <h2 className="font-serif text-2xl text-petrol">Jewelry Inventory</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  <span className="font-semibold text-charcoal">{products.length}</span> {products.length === 1 ? "piece" : "pieces"} in live catalog (persistent & unlimited storage)
+                </p>
+              </div>
+            </div>
+
             {/* Header Controls: Search, Category Filter, Add Button */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div className="flex flex-1 flex-wrap items-center gap-3">
@@ -670,30 +745,19 @@ function AdminPage() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={resetCatalog}
+                  onClick={() => {
+                    if (window.confirm("Restore default sample catalog? This will overwrite your currently saved custom products.")) {
+                      resetCatalog();
+                      showProductToast("Sample catalog restored.");
+                    }
+                  }}
                   className="h-10 rounded-lg border border-border bg-card px-3 eyebrow text-[10px] text-muted-foreground hover:text-petrol transition-colors"
                   title="Restore original jewelry catalog"
                 >
                   Restore Catalog
                 </button>
                 <button
-                  onClick={() => {
-                    setEditingProduct(null);
-                    setFormData({
-                      name: "",
-                      slug: "",
-                      category: "necklaces",
-                      price: 1999,
-                      originalPrice: 2499,
-                      stock: 20,
-                      badge: "",
-                      image: necklaceImg,
-                      customImageUrl: "",
-                      description: "",
-                      material: "18K Gold Vermeil over 925 Sterling Silver",
-                    });
-                    setIsAddModalOpen(true);
-                  }}
+                  onClick={openAddModal}
                   className="flex h-10 items-center gap-1.5 rounded-lg bg-petrol px-4 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs"
                 >
                   <Plus size={16} /> Add Product
@@ -941,7 +1005,102 @@ function AdminPage() {
         )}
 
         {/* ============================================================== */}
-        {/* TAB 4: CLIENT INQUIRIES */}
+        {/* TAB 4: PROMO CODES & DISCOUNTS */}
+        {/* ============================================================== */}
+        {activeTab === "coupons" && (
+          <div className="mt-8 space-y-6 animate-in fade-in duration-150">
+            {/* Header & Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl text-petrol">Promo Codes & Discounts</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Manage active discount codes available for customers during checkout.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Restore factory default coupons (MARGA10, WELCOME500, GOLD15)?")) {
+                      resetCoupons();
+                    }
+                  }}
+                  className="rounded-lg border border-border bg-card px-3 py-2 eyebrow text-xs text-muted-foreground hover:text-petrol transition-colors"
+                >
+                  Restore Defaults
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCouponFormData({
+                      code: "",
+                      type: "percent",
+                      value: 10,
+                      minSpend: 1500,
+                      description: "",
+                    });
+                    setCouponFeedback(null);
+                    setIsAddCouponModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-petrol px-4 py-2 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs"
+                >
+                  <Plus size={15} /> Add Promo Code
+                </button>
+              </div>
+            </div>
+
+            {/* Coupons List */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {coupons.map((c) => (
+                <div
+                  key={c.code}
+                  className="rounded-2xl border border-border bg-card p-5 shadow-2xs space-y-3 relative group"
+                >
+                  <div className="flex items-start justify-between gap-2 border-b border-border pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-bold text-petrol bg-butter/40 px-2.5 py-0.5 rounded-md border border-gold/40">
+                          {c.code}
+                        </span>
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
+                          {c.type === "percent" ? `${c.value}% OFF` : `₹${c.value} OFF`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-charcoal/90 mt-2 font-medium">{c.description}</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Delete promo code "${c.code}"? Customers will no longer be able to use it at checkout.`)) {
+                          deleteCoupon(c.code);
+                        }
+                      }}
+                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0"
+                      title="Delete Promo Code"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1">
+                    <span>
+                      {c.minSpend ? `Min spend: ${formatINR(c.minSpend)}` : "No minimum spend"}
+                    </span>
+                    <span className="font-semibold text-petrol">
+                      {c.type === "percent" ? "Percentage Discount" : "Flat Cash Discount"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 5: CLIENT INQUIRIES */}
         {/* ============================================================== */}
         {activeTab === "inquiries" && (
           <div className="mt-8 space-y-4 animate-in fade-in duration-150">
@@ -1356,39 +1515,146 @@ function AdminPage() {
                 />
               </div>
 
-              {/* Image Picker */}
-              <div>
-                <label className="mb-2 block eyebrow text-muted-foreground">Select Product Photography</label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
-                  {PRESET_IMAGES.map((img, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, image: img.url, customImageUrl: "" })}
-                      className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
-                        formData.image === img.url && !formData.customImageUrl
-                          ? "border-petrol ring-2 ring-gold"
-                          : "border-border hover:border-gold"
-                      }`}
-                    >
-                      <img src={img.url} alt={img.label} className="h-full w-full object-cover" />
-                      <span className="absolute inset-x-0 bottom-0 bg-petrol/75 py-0.5 text-center text-[9px] text-ivory">
-                        {img.label}
-                      </span>
-                    </button>
-                  ))}
+              {/* Product Photography (Multi-Image Upload from Local System Drives) */}
+              <div className="space-y-3 rounded-xl border-2 border-dashed border-border bg-ivory/50 p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block eyebrow text-xs text-petrol font-semibold">
+                      Product Photos ({formData.images.length})
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Upload multiple high-res photos directly from your computer drive (.jpg, .png, .webp).
+                    </p>
+                  </div>
+
+                  <label className="inline-flex items-center gap-1.5 rounded-lg bg-petrol px-3.5 py-2 text-xs eyebrow text-ivory hover:bg-charcoal cursor-pointer transition-colors shadow-2xs shrink-0">
+                    <UploadCloud size={15} />
+                    <span>Upload From Computer</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          setIsUploadingImages(true);
+                          try {
+                            const newUrls = await processMultipleImageFiles(e.target.files);
+                            setFormData((prev) => {
+                              const combined = [...prev.images, ...newUrls];
+                              const primary = combined[0] ?? prev.image;
+                              return {
+                                ...prev,
+                                images: combined,
+                                image: primary,
+                              };
+                            });
+                          } catch (err) {
+                            console.error("Image upload failed:", err);
+                          } finally {
+                            setIsUploadingImages(false);
+                            e.target.value = "";
+                          }
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[11px] text-muted-foreground">Or provide custom image web URL:</span>
-                  <input
-                    type="url"
-                    value={formData.customImageUrl}
-                    onChange={(e) => setFormData({ ...formData, customImageUrl: e.target.value })}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    className="h-10 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
-                  />
-                </div>
+                {/* Uploaded Photos Grid with Primary Cover Selector & Delete */}
+                {formData.images.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 pt-2">
+                    {formData.images.map((imgUrl, idx) => (
+                      <div
+                        key={idx}
+                        className={`group relative aspect-square rounded-xl overflow-hidden border-2 transition-all bg-card ${
+                          idx === 0 ? "border-gold ring-2 ring-gold/40 shadow-xs" : "border-border hover:border-petrol"
+                        }`}
+                      >
+                        <img src={imgUrl} alt={`Photo ${idx + 1}`} className="h-full w-full object-cover" />
+
+                        {idx === 0 ? (
+                          <span className="absolute top-1.5 left-1.5 rounded-md bg-gold px-1.5 py-0.5 text-[9px] font-bold text-petrol shadow-xs">
+                            ★ Primary Cover
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Move to index 0 (Primary)
+                              setFormData((prev) => {
+                                const newImgs = [...prev.images];
+                                const chosen = newImgs.splice(idx, 1)[0] ?? prev.image;
+                                newImgs.unshift(chosen);
+                                return { ...prev, images: newImgs, image: chosen };
+                              });
+                            }}
+                            className="absolute top-1.5 left-1.5 rounded-md bg-charcoal/80 px-1.5 py-0.5 text-[9px] text-ivory hover:bg-petrol transition-colors opacity-90 group-hover:opacity-100"
+                            title="Make this the main cover image"
+                          >
+                            Set Cover
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => {
+                              const newImgs = prev.images.filter((_, i) => i !== idx);
+                              return {
+                                ...prev,
+                                images: newImgs,
+                                image: newImgs[0] || necklaceImg,
+                              };
+                            });
+                          }}
+                          className="absolute top-1.5 right-1.5 grid h-6 w-6 place-items-center rounded-full bg-destructive text-white hover:bg-destructive/90 transition-colors shadow-xs"
+                          title="Remove photo"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {isUploadingImages && (
+                  <p className="text-xs text-petrol font-medium animate-pulse flex items-center gap-1.5 pt-1">
+                    <Sparkles size={13} className="text-gold" /> Uploading & optimizing photos from your computer...
+                  </p>
+                )}
+
+                {/* Optional Preset Presets */}
+                <details className="pt-2 text-xs">
+                  <summary className="text-[11px] text-muted-foreground cursor-pointer hover:text-petrol">
+                    Or choose from Marga Studio Presets:
+                  </summary>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 pt-2">
+                    {PRESET_IMAGES.map((img, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => {
+                            const newImgs = [...prev.images, img.url];
+                            return {
+                              ...prev,
+                              images: newImgs,
+                              image: newImgs[0] || img.url,
+                            };
+                          });
+                        }}
+                        className="relative aspect-square overflow-hidden rounded-lg border border-border hover:border-gold transition-all"
+                        title={`Add ${img.label}`}
+                      >
+                        <img src={img.url} alt={img.label} className="h-full w-full object-cover" />
+                        <span className="absolute inset-x-0 bottom-0 bg-petrol/80 py-0.5 text-center text-[8px] text-ivory truncate">
+                          + {img.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </details>
               </div>
 
               <div className="pt-4 flex justify-end gap-3 border-t border-border">
@@ -1445,6 +1711,7 @@ function AdminPage() {
                 onClick={() => {
                   deleteProduct(deleteConfirmId);
                   setDeleteConfirmId(null);
+                  showProductToast("Product removed from catalog.");
                 }}
                 className="rounded-lg bg-destructive px-5 py-2 eyebrow text-xs text-ivory hover:opacity-90"
               >
@@ -1452,6 +1719,180 @@ function AdminPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: ADD NEW PROMO CODE */}
+      {/* ============================================================== */}
+      {isAddCouponModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/60 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setIsAddCouponModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl bg-ivory p-6 md:p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <h2 className="font-serif text-2xl text-petrol">Create Promo Code</h2>
+              <button
+                onClick={() => setIsAddCouponModalOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted text-charcoal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setCouponFeedback(null);
+                const res = addCoupon({
+                  code: couponFormData.code,
+                  type: couponFormData.type,
+                  value: Number(couponFormData.value),
+                  minSpend: couponFormData.minSpend ? Number(couponFormData.minSpend) : undefined,
+                  description: couponFormData.description.trim(),
+                });
+                if (!res.success) {
+                  setCouponFeedback({ ok: false, msg: res.message });
+                } else {
+                  setCouponFeedback({ ok: true, msg: res.message });
+                  setTimeout(() => {
+                    setIsAddCouponModalOpen(false);
+                    setCouponFeedback(null);
+                  }, 1200);
+                }
+              }}
+              className="mt-6 space-y-4 text-xs"
+            >
+              <div>
+                <label className="mb-1 block eyebrow text-muted-foreground">Promo Code *</label>
+                <input
+                  required
+                  value={couponFormData.code}
+                  onChange={(e) =>
+                    setCouponFormData({
+                      ...couponFormData,
+                      code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
+                    })
+                  }
+                  placeholder="e.g. FESTIVE20 or DIWALI500"
+                  className="h-11 w-full rounded-lg border border-input bg-card px-3 font-mono text-sm font-bold text-petrol outline-none focus:border-gold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block eyebrow text-muted-foreground">Discount Type *</label>
+                  <select
+                    value={couponFormData.type}
+                    onChange={(e) =>
+                      setCouponFormData({
+                        ...couponFormData,
+                        type: e.target.value as "percent" | "flat",
+                      })
+                    }
+                    className="h-11 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
+                  >
+                    <option value="percent">Percentage (%)</option>
+                    <option value="flat">Flat Cash (₹)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block eyebrow text-muted-foreground">
+                    {couponFormData.type === "percent" ? "Percentage (%) *" : "Flat Discount (₹) *"}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    max={couponFormData.type === "percent" ? 100 : 50000}
+                    value={couponFormData.value}
+                    onChange={(e) =>
+                      setCouponFormData({
+                        ...couponFormData,
+                        value: Number(e.target.value),
+                      })
+                    }
+                    className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm text-charcoal outline-none focus:border-gold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block eyebrow text-muted-foreground">
+                  Minimum Order Spend (₹)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={couponFormData.minSpend}
+                  onChange={(e) =>
+                    setCouponFormData({
+                      ...couponFormData,
+                      minSpend: Number(e.target.value),
+                    })
+                  }
+                  placeholder="e.g. 1500 (Set 0 for no minimum)"
+                  className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm text-charcoal outline-none focus:border-gold"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block eyebrow text-muted-foreground">Description / Terms</label>
+                <input
+                  value={couponFormData.description}
+                  onChange={(e) =>
+                    setCouponFormData({
+                      ...couponFormData,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. 20% off on all jewelry orders above ₹2,000"
+                  className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm text-charcoal outline-none focus:border-gold"
+                />
+              </div>
+
+              {couponFeedback && (
+                <p className={`text-xs font-medium ${couponFeedback.ok ? "text-emerald-700" : "text-destructive"}`}>
+                  {couponFeedback.msg}
+                </p>
+              )}
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCouponModalOpen(false)}
+                  className="rounded-lg border border-border px-5 py-2.5 eyebrow text-xs text-charcoal hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-petrol px-6 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs"
+                >
+                  Create Promo Code
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Floating Status Toast for Product & Catalog Actions */}
+      {productToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-petrol px-4 py-3 text-xs text-ivory shadow-2xl border border-gold/30 animate-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle2 size={16} className="text-gold shrink-0" />
+          <span className="font-medium">{productToast}</span>
+          <button
+            onClick={() => setProductToast(null)}
+            className="ml-2 text-ivory/60 hover:text-ivory"
+            title="Dismiss"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Mail, Phone, MapPin, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MapPin, CheckCircle2, Instagram } from "lucide-react";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/contact")({
@@ -87,6 +87,21 @@ function Contact() {
                 <p className="font-medium">201,Pearl Castle Aparment Banaswadi, Bangalore 560033</p>
               </div>
             </div>
+
+            <a
+              href="https://www.instagram.com/margajewelryy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-gold/40 bg-card p-3 hover:border-gold hover:bg-butter/20 transition-all text-petrol"
+            >
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-petrol text-butter">
+                <Instagram size={20} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Instagram</p>
+                <p className="font-medium text-xs text-petrol">@margajewelryy →</p>
+              </div>
+            </a>
           </div>
         </div>
 

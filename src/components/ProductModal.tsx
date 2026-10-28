@@ -7,10 +7,13 @@ export function ProductModal() {
   const { quickViewProduct, setQuickViewProduct, addToCart, wishlist, toggleWish } = useStore();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [selectedImg, setSelectedImg] = useState<string | null>(null);
 
   if (!quickViewProduct) return null;
 
   const p = quickViewProduct;
+  const allImages = Array.from(new Set([p.image, ...(p.images || [])])).filter(Boolean);
+  const activeImage = selectedImg && allImages.includes(selectedImg) ? selectedImg : p.image;
   const wished = wishlist.includes(p.id);
   const discountPercent =
     p.originalPrice && p.originalPrice > p.price
@@ -41,25 +44,45 @@ export function ProductModal() {
         </button>
 
         <div className="grid md:grid-cols-2">
-          {/* Image & Badges */}
-          <div className="relative aspect-square md:aspect-auto bg-muted">
-            <img
-              src={p.image}
-              alt={p.name}
-              className="h-full w-full object-cover"
-            />
-            {p.badge && (
-              <span className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 eyebrow text-[10px] text-charcoal shadow-sm">
-                {p.badge}
-              </span>
-            )}
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between rounded-lg bg-ivory/90 p-3 text-xs text-charcoal backdrop-blur-xs">
-              <span className="flex items-center gap-1.5 font-medium">
-                <Sparkles size={14} className="text-gold" />
-                Anti-Tarnish Plating
-              </span>
-              <span className="text-muted-foreground">Certified 18K</span>
+          {/* Image & Badges & Gallery */}
+          <div className="flex flex-col bg-muted/30">
+            <div className="relative aspect-square bg-muted">
+              <img
+                src={activeImage}
+                alt={p.name}
+                className="h-full w-full object-cover transition-opacity duration-200"
+              />
+              {p.badge && (
+                <span className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 eyebrow text-[10px] text-charcoal shadow-sm">
+                  {p.badge}
+                </span>
+              )}
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between rounded-lg bg-ivory/90 p-3 text-xs text-charcoal backdrop-blur-xs">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Sparkles size={14} className="text-gold" />
+                  Anti-Tarnish Plating
+                </span>
+                <span className="text-muted-foreground">Certified 18K</span>
+              </div>
             </div>
+
+            {/* Multiple Image Thumbnails */}
+            {allImages.length > 1 && (
+              <div className="flex items-center gap-2 p-3 bg-ivory/60 border-t border-border overflow-x-auto no-scrollbar">
+                {allImages.map((imgUrl, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelectedImg(imgUrl)}
+                    className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                      activeImage === imgUrl ? "border-petrol ring-2 ring-gold/60 scale-105" : "border-border hover:border-gold opacity-75 hover:opacity-100"
+                    }`}
+                  >
+                    <img src={imgUrl} alt={`${p.name} angle ${i + 1}`} className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Details & Actions */}

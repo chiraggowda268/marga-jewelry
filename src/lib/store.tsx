@@ -5,6 +5,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { idbGet, idbSet } from "./idb";
 import {
   defaultProducts,
   defaultUsers,
@@ -48,6 +49,10 @@ type Store = {
   isWished: (id: string) => boolean;
 
   // Coupons & Pricing
+  coupons: Coupon[];
+  addCoupon: (coupon: Coupon) => { success: boolean; message: string };
+  deleteCoupon: (code: string) => { success: boolean; message: string };
+  resetCoupons: () => void;
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
@@ -83,6 +88,7 @@ const STORAGE_KEYS = {
   ORDERS: "marga_orders_prod_v1",
   INQUIRIES: "marga_inquiries_prod_v1",
   COUPON: "marga_coupon_v1",
+  COUPONS_LIST: "marga_coupons_list_v1",
   ADMIN_PASSWORDS: "marga_admin_passwords_v1",
   CUSTOMER_PASSWORDS: "marga_customer_passwords_v1",
 };
@@ -95,6 +101,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>(defaultOrders);
   const [inquiries, setInquiries] = useState<Inquiry[]>(defaultInquiries);
+  const [coupons, setCoupons] = useState<Coupon[]>(availableCoupons);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [adminPasswords, setAdminPasswords] = useState<Record<string, string>>({});
   const [customerPasswords, setCustomerPasswords] = useState<Record<string, string>>({});
@@ -122,76 +129,169 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Load state from localStorage on mount (Client-side only)
+  // Load state from IndexedDB (for unlimited product/image storage) and localStorage on mount
   useEffect(() => {
-    try {
-      const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      if (savedProducts) setProducts(JSON.parse(savedProducts));
+    let isMounted = true;
 
-      const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
-      if (savedUser) setCurrentUser(JSON.parse(savedUser));
-
-      const savedAdminPw = localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORDS);
-      if (savedAdminPw) setAdminPasswords(JSON.parse(savedAdminPw));
-
-      const savedCustPw = localStorage.getItem(STORAGE_KEYS.CUSTOMER_PASSWORDS);
-      if (savedCustPw) setCustomerPasswords(JSON.parse(savedCustPw));
-
-      const savedUsersList = localStorage.getItem(STORAGE_KEYS.USERS_LIST);
-      if (savedUsersList) {
-        const parsed: User[] = JSON.parse(savedUsersList);
-        // Ensure Chirag & Greeshma exist in the user list
-        const cleaned = parsed.filter((u) => u.id !== "usr_admin");
-        const hasChirag = cleaned.some((u) => u.username === "chirag" || u.id === "usr_admin_chirag");
-        const hasGreeshma = cleaned.some((u) => u.username === "greeshma" || u.id === "usr_admin_greeshma");
-        const updated = [...cleaned];
-        if (!hasChirag && defaultUsers[0]) updated.unshift(defaultUsers[0]);
-        if (!hasGreeshma && defaultUsers[1]) updated.splice(1, 0, defaultUsers[1]);
-        setUsersList(updated);
-      } else {
-        setUsersList(defaultUsers);
-      }
-
-      const savedCart = localStorage.getItem(STORAGE_KEYS.CART);
-      if (savedCart) setCart(JSON.parse(savedCart));
-
-      const savedWishlist = localStorage.getItem(STORAGE_KEYS.WISHLIST);
-      if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
-
-      // Clean up legacy mock/test sales data from demo versions
+    async function initializeStore() {
+      // 1. Instant optimistic load from localStorage if available
       try {
-        localStorage.removeItem("marga_orders_v1");
-        localStorage.removeItem("marga_inquiries_v1");
+        const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+        if (savedProducts) {
+          const parsed = JSON.parse(savedProducts);
+          if (Array.isArray(parsed) && parsed.length > 0 && isMounted) {
+            setProducts(parsed);
+          }
+        }
       } catch {}
 
-      const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders));
-      } else {
-        setOrders([]);
+      // 2. Authoritative load from IndexedDB (modern, multi-gigabyte quota, handles 100+ multi-image products)
+      try {
+        const idbProducts = await idbGet<Product[]>(STORAGE_KEYS.PRODUCTS);
+        if (idbProducts && Array.isArray(idbProducts) && idbProducts.length > 0) {
+          if (isMounted) setProducts(idbProducts);
+        } else {
+          // If IndexedDB is empty yet, check localStorage to migrate existing catalog
+          const localSaved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+          if (localSaved) {
+            try {
+              const parsed = JSON.parse(localSaved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                await idbSet(STORAGE_KEYS.PRODUCTS, parsed);
+                if (isMounted) setProducts(parsed);
+              }
+            } catch {}
+          } else {
+            // First time load: seed IndexedDB with default products
+            await idbSet(STORAGE_KEYS.PRODUCTS, defaultProducts);
+          }
+        }
+      } catch (err) {
+        console.warn("[Store] IndexedDB load error for products:", err);
       }
 
-      const savedInquiries = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
-      if (savedInquiries) {
-        setInquiries(JSON.parse(savedInquiries));
-      } else {
-        setInquiries([]);
+      // 3. Load remaining state (user, cart, wishlist, orders, inquiries, coupons)
+      try {
+        const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        if (savedUser && isMounted) setCurrentUser(JSON.parse(savedUser));
+
+        const savedAdminPw = localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORDS);
+        if (savedAdminPw && isMounted) setAdminPasswords(JSON.parse(savedAdminPw));
+
+        const savedCustPw = localStorage.getItem(STORAGE_KEYS.CUSTOMER_PASSWORDS);
+        if (savedCustPw && isMounted) setCustomerPasswords(JSON.parse(savedCustPw));
+
+        const savedUsersList = localStorage.getItem(STORAGE_KEYS.USERS_LIST);
+        if (savedUsersList && isMounted) {
+          const parsed: User[] = JSON.parse(savedUsersList);
+          // Ensure Chirag & Greeshma exist in the user list
+          const cleaned = parsed.filter((u) => u.id !== "usr_admin");
+          const hasChirag = cleaned.some((u) => u.username === "chirag" || u.id === "usr_admin_chirag");
+          const hasGreeshma = cleaned.some((u) => u.username === "greeshma" || u.id === "usr_admin_greeshma");
+          const updated = [...cleaned];
+          if (!hasChirag && defaultUsers[0]) updated.unshift(defaultUsers[0]);
+          if (!hasGreeshma && defaultUsers[1]) updated.splice(1, 0, defaultUsers[1]);
+          setUsersList(updated);
+        } else if (isMounted) {
+          setUsersList(defaultUsers);
+        }
+
+        const savedCart = localStorage.getItem(STORAGE_KEYS.CART);
+        if (savedCart && isMounted) setCart(JSON.parse(savedCart));
+
+        const savedWishlist = localStorage.getItem(STORAGE_KEYS.WISHLIST);
+        if (savedWishlist && isMounted) setWishlist(JSON.parse(savedWishlist));
+
+        // Clean up legacy mock/test sales data from demo versions
+        try {
+          localStorage.removeItem("marga_orders_v1");
+          localStorage.removeItem("marga_inquiries_v1");
+        } catch {}
+
+        // Load orders: Check IndexedDB then localStorage
+        let loadedOrders: Order[] | null = null;
+        try {
+          const idbOrders = await idbGet<Order[]>(STORAGE_KEYS.ORDERS);
+          if (idbOrders && Array.isArray(idbOrders)) {
+            loadedOrders = idbOrders;
+          }
+        } catch {}
+
+        if (!loadedOrders) {
+          const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+          if (savedOrders) {
+            try {
+              loadedOrders = JSON.parse(savedOrders);
+            } catch {}
+          }
+        }
+        if (isMounted) {
+          setOrders(loadedOrders ?? []);
+        }
+
+        // Load inquiries: Check IndexedDB then localStorage
+        let loadedInquiries: Inquiry[] | null = null;
+        try {
+          const idbInq = await idbGet<Inquiry[]>(STORAGE_KEYS.INQUIRIES);
+          if (idbInq && Array.isArray(idbInq)) {
+            loadedInquiries = idbInq;
+          }
+        } catch {}
+
+        if (!loadedInquiries) {
+          const savedInquiries = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
+          if (savedInquiries) {
+            try {
+              loadedInquiries = JSON.parse(savedInquiries);
+            } catch {}
+          }
+        }
+        if (isMounted) {
+          setInquiries(loadedInquiries ?? []);
+        }
+
+        const savedCoupon = localStorage.getItem(STORAGE_KEYS.COUPON);
+        if (savedCoupon && isMounted) setAppliedCoupon(JSON.parse(savedCoupon));
+
+        const savedCoupons = localStorage.getItem(STORAGE_KEYS.COUPONS_LIST);
+        if (savedCoupons && isMounted) setCoupons(JSON.parse(savedCoupons));
+      } catch (e) {
+        console.warn("Could not load stored data from localStorage:", e);
       }
 
-      const savedCoupon = localStorage.getItem(STORAGE_KEYS.COUPON);
-      if (savedCoupon) setAppliedCoupon(JSON.parse(savedCoupon));
-    } catch (e) {
-      console.warn("Could not load stored data from localStorage:", e);
+      if (isMounted) {
+        setHydrated(true);
+      }
     }
-    setHydrated(true);
+
+    initializeStore();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Sync state to localStorage when changes occur
+  // Sync products state to IndexedDB (authoritative) and localStorage (fallback)
   useEffect(() => {
     if (!hydrated) return;
+
+    // 1. Always write to IndexedDB (guaranteed persistence, no 5MB quota limit)
+    idbSet(STORAGE_KEYS.PRODUCTS, products).catch((err) => {
+      console.warn("Could not save products to IndexedDB:", err);
+    });
+
+    // 2. Best-effort sync to localStorage
     try {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-    } catch {}
+    } catch (err) {
+      // If localStorage 5MB quota is exceeded, clean up the bloated key so other keys (cart, auth) keep working
+      console.warn(
+        "localStorage quota reached for products. Product catalog is safely persisted in IndexedDB."
+      );
+      try {
+        localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+      } catch {}
+    }
   }, [products, hydrated]);
 
   useEffect(() => {
@@ -242,6 +342,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
+    idbSet(STORAGE_KEYS.ORDERS, orders).catch(() => {});
     try {
       localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
     } catch {}
@@ -249,6 +350,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
+    idbSet(STORAGE_KEYS.INQUIRIES, inquiries).catch(() => {});
     try {
       localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
     } catch {}
@@ -264,6 +366,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
   }, [appliedCoupon, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.COUPONS_LIST, JSON.stringify(coupons));
+    } catch {}
+  }, [coupons, hydrated]);
 
   // Pricing calculations
   const cartSubtotal = Object.entries(cart).reduce((sum, [id, qty]) => {
@@ -464,22 +573,57 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { success: true, message: `Password for ${username} updated successfully!` };
   };
 
-  // Coupons
+  // Coupons Management
+  const addCoupon = (newCoupon: Coupon) => {
+    const formattedCode = newCoupon.code.trim().toUpperCase();
+    if (!formattedCode) {
+      return { success: false, message: "Coupon code is required." };
+    }
+    if (coupons.some((c) => c.code.toUpperCase() === formattedCode)) {
+      return { success: false, message: `Promo code ${formattedCode} already exists.` };
+    }
+    if (newCoupon.value <= 0) {
+      return { success: false, message: "Discount value must be greater than zero." };
+    }
+    const cleanCoupon: Coupon = {
+      code: formattedCode,
+      type: newCoupon.type,
+      value: Number(newCoupon.value),
+      minSpend: newCoupon.minSpend ? Number(newCoupon.minSpend) : undefined,
+      description: newCoupon.description.trim() || `${newCoupon.type === "percent" ? `${newCoupon.value}% off` : `Flat ₹${newCoupon.value} off`}`,
+    };
+    setCoupons((prev) => [cleanCoupon, ...prev]);
+    return { success: true, message: `Promo code ${formattedCode} created successfully!` };
+  };
+
+  const deleteCoupon = (code: string) => {
+    const formatted = code.trim().toUpperCase();
+    setCoupons((prev) => prev.filter((c) => c.code.toUpperCase() !== formatted));
+    if (appliedCoupon?.code.toUpperCase() === formatted) {
+      setAppliedCoupon(null);
+    }
+    return { success: true, message: `Promo code ${formatted} deleted.` };
+  };
+
+  const resetCoupons = () => {
+    setCoupons(availableCoupons);
+  };
+
   const applyCoupon = (code: string) => {
-    const found = availableCoupons.find(
+    const found = coupons.find(
       (c) => c.code.toUpperCase() === code.trim().toUpperCase()
     );
     if (!found) {
-      return { success: false, message: "Invalid coupon code." };
+      return { success: false, message: "Invalid promo code." };
     }
     if (found.minSpend && cartSubtotal < found.minSpend) {
       return {
         success: false,
-        message: `Coupon requires minimum order of ₹${found.minSpend.toLocaleString("en-IN")}.`,
+        message: `Promo code requires minimum order of ₹${found.minSpend.toLocaleString("en-IN")}.`,
       };
     }
     setAppliedCoupon(found);
-    return { success: true, message: `Coupon ${found.code} applied successfully!` };
+    return { success: true, message: `Promo code ${found.code} applied successfully!` };
   };
 
   const removeCoupon = () => setAppliedCoupon(null);
@@ -491,24 +635,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       id: `p_${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-    setProducts((prev) => [newProduct, ...prev]);
+    setProducts((prev) => {
+      const next = [newProduct, ...prev];
+      idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
+      return next;
+    });
     return newProduct;
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-    );
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
+      return next;
+    });
   };
 
   const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setProducts((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
+      return next;
+    });
     removeFromCart(id);
     setWishlist((prev) => prev.filter((x) => x !== id));
   };
 
   const resetCatalog = () => {
     setProducts(defaultProducts);
+    idbSet(STORAGE_KEYS.PRODUCTS, defaultProducts).catch(() => {});
+    try {
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(defaultProducts));
+    } catch {}
   };
 
   // Orders
@@ -583,6 +741,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         wishlist,
         toggleWish,
         isWished,
+        coupons,
+        addCoupon,
+        deleteCoupon,
+        resetCoupons,
         appliedCoupon,
         applyCoupon,
         removeCoupon,

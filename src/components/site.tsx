@@ -62,14 +62,6 @@ export function Header() {
       <div className="bg-petrol text-ivory px-4 py-1.5 text-center text-xs tracking-wider flex items-center justify-center gap-2">
         <Sparkles size={13} className="text-butter" />
         <span>Complimentary Express Delivery on orders above ₹2,499 | Use code <strong>MARGA10</strong></span>
-        {currentUser?.role === "admin" && (
-          <Link
-            to="/admin"
-            className="ml-3 hidden sm:inline-flex items-center gap-1 rounded bg-butter px-2 py-0.5 text-[10px] font-semibold text-petrol hover:bg-gold transition-colors"
-          >
-            <ShieldAlert size={11} /> Admin Panel
-          </Link>
-        )}
       </div>
 
       <header className="sticky top-0 z-40 border-b border-border bg-ivory">
@@ -607,14 +599,6 @@ export function Footer() {
           <p className="mt-4 max-w-xs text-sm text-ivory/70 leading-relaxed">
             Everyday fine jewelry, designed to be worn, stacked, and loved for a lifetime.
           </p>
-          <div className="mt-6 inline-block">
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gold/40 px-3 py-1 text-xs text-gold hover:bg-gold hover:text-petrol transition-colors"
-            >
-              <ShieldAlert size={14} /> Admin Portal
-            </Link>
-          </div>
         </div>
 
         <div>
@@ -655,10 +639,21 @@ export function Footer() {
           </form>
           {msg && <p className={`mt-2 text-sm ${msg.ok ? "text-butter" : "text-gold"}`}>{msg.t}</p>}
           <div className="mt-6 flex gap-2">
-            {[Instagram, Facebook, Youtube].map((I, i) => (
+            <a
+              href="https://www.instagram.com/margajewelryy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow Marga Jewelry on Instagram"
+              className="grid h-11 w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
+            >
+              <Instagram size={18} strokeWidth={1.5} />
+            </a>
+            {[Facebook, Youtube].map((I, i) => (
               <a
                 key={i}
-                href="#"
+                href="https://www.instagram.com/margajewelryy/"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Social"
                 className="grid h-11 w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
               >
