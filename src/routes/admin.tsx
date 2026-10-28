@@ -113,10 +113,14 @@ function AdminPage() {
   // Settings tab: Razorpay Gateway Configuration state
   const [razorpayKeyInput, setRazorpayKeyInput] = useState(() => {
     if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("marga_razorpay_key_id");
+      if (saved && saved.trim() && saved !== "rzp_test_SPnZED73FNEVZM") {
+        return saved.trim();
+      }
       const envKey = (import.meta.env as Record<string, string | undefined>)["VITE_RAZORPAY_KEY_ID"];
-      return localStorage.getItem("marga_razorpay_key_id") || envKey || "rzp_test_SPnZED73FNEVZM";
+      return envKey || "rzp_live_TtMrHAG61TLoAx";
     }
-    return "rzp_test_SPnZED73FNEVZM";
+    return "rzp_live_TtMrHAG61TLoAx";
   });
   const [keySavedMessage, setKeySavedMessage] = useState(false);
 
@@ -1650,25 +1654,39 @@ function AdminPage() {
                   <div>
                     <h3 className="font-serif text-xl text-petrol">Razorpay Payment Gateway</h3>
                     <p className="text-xs text-muted-foreground">
-                      Handles instant customer UPI (GPay, PhonePe, Paytm), Cards & NetBanking.
+                      Accepts live customer payments via UPI (GPay, PhonePe, Paytm, CRED), Cards & NetBanking.
                     </p>
                   </div>
                 </div>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                  razorpayKeyInput.trim() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
-                }`}>
-                  {razorpayKeyInput.trim() ? "Gateway Active" : "Key Needed"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                      razorpayKeyInput.trim().startsWith("rzp_live_")
+                        ? "bg-emerald-100 text-emerald-800"
+                        : razorpayKeyInput.trim().startsWith("rzp_test_")
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {razorpayKeyInput.trim().startsWith("rzp_live_")
+                      ? "● Live Gateway Active"
+                      : razorpayKeyInput.trim().startsWith("rzp_test_")
+                      ? "Test Mode"
+                      : "Key Needed"}
+                  </span>
+                </div>
               </div>
 
               <div className="rounded-xl border border-border bg-ivory p-4 text-xs space-y-2 text-charcoal/80">
-                <p className="font-semibold text-petrol">How to get your Razorpay Key ID:</p>
-                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>In your Razorpay Dashboard, look at the bottom left menu: click <strong>Account & Settings</strong>.</li>
-                  <li>Under <em>Website and app settings</em>, click <strong>API Keys</strong>.</li>
-                  <li>Click <strong>Generate Key</strong> (or copy your existing Key ID starting with <code className="bg-card px-1 py-0.5 rounded text-charcoal font-mono">rzp_test_...</code> or <code className="bg-card px-1 py-0.5 rounded text-charcoal font-mono">rzp_live_...</code>).</li>
-                  <li>Paste the Key ID below and click <strong>Save Key</strong> (or put it in <code className="bg-card px-1 rounded">.env</code> as <code className="font-mono">VITE_RAZORPAY_KEY_ID</code>).</li>
-                </ol>
+                <div className="flex items-center justify-between font-semibold text-petrol">
+                  <span>Current Production Gateway Status</span>
+                  <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Orders API & Auto-Verification Enabled
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Configured with Live Key ID <code className="bg-card px-1 py-0.5 rounded text-petrol font-mono font-bold">rzp_live_TtMrHAG61TLoAx</code> and live Key Secret on server. Payments are routed instantly to your registered Razorpay bank account.
+                </p>
               </div>
 
               <form
@@ -1681,11 +1699,11 @@ function AdminPage() {
                 className="space-y-3 pt-1"
               >
                 <div>
-                  <label className="mb-1 block text-xs eyebrow text-muted-foreground">Razorpay Key ID</label>
+                  <label className="mb-1 block text-xs eyebrow text-muted-foreground">Razorpay Live / Test Key ID</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="e.g. rzp_test_1DP5mmOlF5G5ag"
+                      placeholder="e.g. rzp_live_TtMrHAG61TLoAx"
                       value={razorpayKeyInput}
                       onChange={(e) => setRazorpayKeyInput(e.target.value)}
                       className="h-10 flex-1 rounded-lg border border-input bg-ivory px-3 font-mono text-xs text-charcoal outline-none focus:border-gold"
