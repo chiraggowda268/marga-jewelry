@@ -561,7 +561,12 @@ export function ProductCard({ p }: { p: Product }) {
           >
             {p.name}
           </p>
-          <div className="flex items-center justify-center gap-2 mt-0.5">
+          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+            <span className="text-amber-500">★</span>
+            <span className="font-medium text-charcoal">{p.rating || 4.9}</span>
+            <span className="text-[11px]">({p.reviewsCount || (p.reviews ? p.reviews.length : 7)})</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-1">
             <span className="text-sm font-medium text-petrol">{formatINR(p.price)}</span>
             {p.originalPrice && (
               <span className="text-xs text-muted-foreground line-through">
