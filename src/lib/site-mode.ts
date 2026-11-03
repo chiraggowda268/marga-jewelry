@@ -7,4 +7,4 @@
  *
  * (In all modes, the Admin Portal at /admin remains accessible to the store owner)
  */
-export const SITE_MODE: "LIVE" | "MAINTENANCE" | "UNREACHABLE" = "UNREACHABLE";
+export const SITE_MODE: "LIVE" | "MAINTENANCE" | "UNREACHABLE" = "LIVE";
