@@ -82,14 +82,18 @@ export function processAndCompressImage(
       try {
         const blob = await canvasToBlob(canvas, "image/jpeg", quality);
         if (blob) {
-          const cloudUrl = await uploadToFirebaseStorage(blob, folder, file.name);
+          const uploadPromise = uploadToFirebaseStorage(blob, folder, file.name);
+          const timeoutPromise = new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error("Storage timeout")), 4000)
+          );
+          const cloudUrl = await Promise.race([uploadPromise, timeoutPromise]);
           if (cloudUrl) {
             resolve(cloudUrl);
             return;
           }
         }
       } catch (err) {
-        console.warn("[Firebase Storage] Cloud upload failed, using optimized local asset:", err);
+        console.warn("[Firebase Storage] Cloud upload failed or timed out, using optimized local asset:", err);
       }
 
       // Fallback to data URL

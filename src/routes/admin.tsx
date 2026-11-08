@@ -1894,30 +1894,38 @@ function AdminPage() {
                     </p>
                   </div>
 
-                  <label className="inline-flex items-center gap-1.5 rounded-lg bg-petrol px-3.5 py-2 text-xs eyebrow text-ivory hover:bg-charcoal cursor-pointer transition-colors shadow-2xs shrink-0">
+                  <label className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs eyebrow text-ivory transition-colors shadow-2xs shrink-0 cursor-pointer ${
+                    isUploadingImages ? "bg-petrol/60 pointer-events-none" : "bg-petrol hover:bg-charcoal"
+                  }`}>
                     <UploadCloud size={15} />
-                    <span>Upload From Computer</span>
+                    <span>{isUploadingImages ? "Optimizing & Adding..." : "Upload From Computer"}</span>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
+                      disabled={isUploadingImages}
                       className="hidden"
                       onChange={async (e) => {
                         if (e.target.files && e.target.files.length > 0) {
                           setIsUploadingImages(true);
                           try {
                             const newUrls = await processMultipleImageFiles(e.target.files, 1200, 0.82, 'products');
-                            setFormData((prev) => {
-                              const combined = [...prev.images, ...newUrls];
-                              const primary = combined[0] ?? prev.image;
-                              return {
-                                ...prev,
-                                images: combined,
-                                image: primary,
-                              };
-                            });
+                            if (newUrls.length > 0) {
+                              setFormData((prev) => {
+                                const hasOnlyPreset = prev.images.every((img) => PRESET_IMAGES.some((p) => p.url === img));
+                                const cleanPrev = hasOnlyPreset ? [] : prev.images;
+                                const combined = [...newUrls, ...cleanPrev];
+                                return {
+                                  ...prev,
+                                  images: combined,
+                                  image: combined[0] || newUrls[0] || prev.image || necklaceImg,
+                                };
+                              });
+                              showProductToast(`Added ${newUrls.length} photo(s) successfully!`);
+                            }
                           } catch (err) {
                             console.error("Image upload failed:", err);
+                            showProductToast("Failed to process selected photos.");
                           } finally {
                             setIsUploadingImages(false);
                             e.target.value = "";
@@ -2037,9 +2045,10 @@ function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-petrol px-6 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs"
+                  disabled={isUploadingImages}
+                  className="rounded-lg bg-petrol px-6 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs disabled:opacity-50"
                 >
-                  {editingProduct ? "Save Changes" : "Publish Piece"}
+                  {isUploadingImages ? "Processing Photos..." : editingProduct ? "Save Changes" : "Publish Piece"}
                 </button>
               </div>
             </form>
