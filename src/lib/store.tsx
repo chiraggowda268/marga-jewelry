@@ -34,7 +34,8 @@ type Store = {
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   resetCatalog: () => void;
-  addReview: (productId: string, review: Omit<Review, "id">) => void;
+  addReview: (productId: string, review: Omit<Review, "id">) => Review;
+  updateReview: (productId: string, reviewId: string, updates: Partial<Review>) => void;
   deleteReview: (productId: string, reviewId: string) => void;
 
   // Auth & User
@@ -713,10 +714,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   // Product Reviews Management (Admin & Front-end with Firestore Cloud Persistence)
-  const addReview = (productId: string, reviewData: Omit<Review, "id">) => {
+  const addReview = (productId: string, reviewData: Omit<Review, "id">): Review => {
+    const generatedToken =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `tok_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
     const newRev: Review = {
       ...reviewData,
       id: `rev_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      authorToken: reviewData.authorToken || generatedToken,
+      userId: reviewData.userId || currentUser?.id,
+      isCurated: reviewData.isCurated || false,
     };
 
     setProducts((prev) => {
@@ -740,6 +749,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
       return next;
     });
+
+    return newRev;
   };
 
   const deleteReview = (productId: string, reviewId: string) => {
@@ -758,6 +769,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         };
         saveProductToFirestore(updatedProduct).catch((err) => {
           console.warn("[Firebase] Could not sync review deletion to Firestore:", err);
+        });
+        return updatedProduct;
+      });
+      idbSet(STORAGE_KEYS.PRODUCTS, next).catch(() => {});
+      return next;
+    });
+  };
+
+  const updateReview = (productId: string, reviewId: string, updates: Partial<Review>) => {
+    setProducts((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== productId) return p;
+        const currentReviews = p.reviews && p.reviews.length > 0 ? p.reviews : getProductReviews(p);
+        const updatedReviews = currentReviews.map((r) =>
+          r.id === reviewId ? { ...r, ...updates } : r
+        );
+        const sum = updatedReviews.reduce((acc, r) => acc + r.rating, 0);
+        const avg = updatedReviews.length > 0 ? Number((sum / updatedReviews.length).toFixed(1)) : 5.0;
+        const updatedProduct: Product = {
+          ...p,
+          reviews: updatedReviews,
+          reviewsCount: updatedReviews.length,
+          rating: avg,
+        };
+        saveProductToFirestore(updatedProduct).catch((err) => {
+          console.warn("[Firebase] Could not sync review update to Firestore:", err);
         });
         return updatedProduct;
       });
@@ -822,6 +859,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         deleteProduct,
         resetCatalog,
         addReview,
+        updateReview,
         deleteReview,
         currentUser,
         login,

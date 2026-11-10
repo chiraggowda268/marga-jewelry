@@ -12,14 +12,97 @@ export type Review = {
   comment: string;
   verified?: boolean | undefined;
   images?: string[] | undefined; // Optional customer wear photos attached to the review
+  userId?: string | undefined; // Account ID of customer who wrote it (if logged in)
+  authorToken?: string | undefined; // Unique client token given to original author
+  isCurated?: boolean | undefined; // True for pre-seeded or admin-curated reviews (customers cannot edit)
 };
+
+const MY_REVIEWS_STORAGE_KEY = "marga_my_authored_reviews_v1";
+
+/**
+ * Checks whether a review is pre-seeded or admin-curated.
+ * Curated reviews cannot be edited by storefront customers under any circumstances.
+ */
+export function isCuratedReview(rev: Review): boolean {
+  if (rev.isCurated === true) return true;
+  // All pre-seeded reviews start with rev_ele_, rev_bpe_, rev_pbr_, rev_rpe_, rev_mme_, rev_gcs_, rev_ref_, rev_gfs_, rev_gen_
+  if (/^rev_(ele|bpe|pbr|rpe|mme|gcs|ref|gfs|gen)_/i.test(rev.id)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Retrieves authored review IDs and tokens stored on this browser/device.
+ */
+export function getMyAuthoredReviewKeys(): { ids: string[]; tokens: string[] } {
+  if (typeof window === "undefined") return { ids: [], tokens: [] };
+  try {
+    const raw = localStorage.getItem(MY_REVIEWS_STORAGE_KEY);
+    if (!raw) return { ids: [], tokens: [] };
+    const parsed = JSON.parse(raw);
+    return {
+      ids: Array.isArray(parsed.ids) ? parsed.ids : [],
+      tokens: Array.isArray(parsed.tokens) ? parsed.tokens : [],
+    };
+  } catch {
+    return { ids: [], tokens: [] };
+  }
+}
+
+/**
+ * Registers a freshly submitted customer review on this browser/device.
+ */
+export function registerAuthoredReview(reviewId: string, token?: string | undefined) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = getMyAuthoredReviewKeys();
+    const updatedIds = Array.from(new Set([...current.ids, reviewId]));
+    const updatedTokens = token ? Array.from(new Set([...current.tokens, token])) : current.tokens;
+    localStorage.setItem(
+      MY_REVIEWS_STORAGE_KEY,
+      JSON.stringify({ ids: updatedIds, tokens: updatedTokens })
+    );
+  } catch (err) {
+    console.warn("Could not save authored review token", err);
+  }
+}
+
+/**
+ * Determines whether the current customer is the original author of the review.
+ * - Fake/curated reviews always return false.
+ * - Other customers always return false.
+ * - Only the original poster (logged-in user ID or matching local device token/ID) returns true.
+ */
+export function canCustomerEditReview(rev: Review, currentUserId?: string | null | undefined): boolean {
+  // 1. Curated or fake reviews can NEVER be edited by customers on the storefront
+  if (isCuratedReview(rev)) {
+    return false;
+  }
+
+  // 2. If logged in as customer and matches review's author account
+  if (currentUserId && rev.userId && rev.userId === currentUserId) {
+    return true;
+  }
+
+  // 3. If customer posted on this device/browser (stored review ID or author token)
+  const { ids, tokens } = getMyAuthoredReviewKeys();
+  if (ids.includes(rev.id)) {
+    return true;
+  }
+  if (rev.authorToken && tokens.includes(rev.authorToken)) {
+    return true;
+  }
+
+  return false;
+}
 
 // 1. Emerald Leaf Elegance Necklace Set (7 reviews)
 export const emeraldLeafReviews: Review[] = [
   {
     id: "rev_ele_1",
     author: "Ananya Sharma",
-    rating: 5,
+    rating: 4,
     date: "3 days ago",
     comment: "The green stones look beautiful with the gold finish. Very elegant design.",
     verified: true,
@@ -35,7 +118,7 @@ export const emeraldLeafReviews: Review[] = [
   {
     id: "rev_ele_3",
     author: "Sneha Reddy",
-    rating: 5,
+    rating: 4,
     date: "2 weeks ago",
     comment: "Such a pretty set for traditional outfits. The earrings match perfectly.",
     verified: true,
@@ -67,7 +150,7 @@ export const emeraldLeafReviews: Review[] = [
   {
     id: "rev_ele_7",
     author: "Ritu Verma",
-    rating: 5,
+    rating: 4,
     date: "2 months ago",
     comment: "Really like the combination of green and white stones.",
     verified: true,
@@ -79,7 +162,7 @@ export const crystalLeafReviews: Review[] = [
   {
     id: "rev_clg_1",
     author: "Deepika Nair",
-    rating: 5,
+    rating: 4,
     date: "2 days ago",
     comment: "The white stones give it a lovely shine.",
     verified: true,
@@ -87,7 +170,7 @@ export const crystalLeafReviews: Review[] = [
   {
     id: "rev_clg_2",
     author: "Pooja Iyer",
-    rating: 5,
+    rating: 3,
     date: "5 days ago",
     comment: "Looks elegant and goes well with different colours.",
     verified: true,
@@ -95,7 +178,7 @@ export const crystalLeafReviews: Review[] = [
   {
     id: "rev_clg_3",
     author: "Aarohi Gupta",
-    rating: 5,
+    rating: 4,
     date: "1 week ago",
     comment: "I like how the necklace has a simple leaf design.",
     verified: true,
@@ -103,7 +186,7 @@ export const crystalLeafReviews: Review[] = [
   {
     id: "rev_clg_4",
     author: "Shreya Kulkarni",
-    rating: 5,
+    rating: 4,
     date: "2 weeks ago",
     comment: "The matching earrings make the set look complete.",
     verified: true,
@@ -135,7 +218,7 @@ export const crystalLeafReviews: Review[] = [
   {
     id: "rev_clg_8",
     author: "Neha Bansal",
-    rating: 5,
+    rating: 4,
     date: "2 months ago",
     comment: "The leaf-shaped details are my favourite part.",
     verified: true,
@@ -155,7 +238,7 @@ export const emeraldFloralReviews: Review[] = [
   {
     id: "rev_efc_1",
     author: "Ishita Sen",
-    rating: 5,
+    rating: 4,
     date: "4 days ago",
     comment: "The floral design with green stones is really pretty.",
     verified: true,
@@ -163,7 +246,7 @@ export const emeraldFloralReviews: Review[] = [
   {
     id: "rev_efc_2",
     author: "Divya Nambiar",
-    rating: 5,
+    rating: 4,
     date: "1 week ago",
     comment: "Looks lovely with ethnic wear.",
     verified: true,
@@ -179,7 +262,7 @@ export const emeraldFloralReviews: Review[] = [
   {
     id: "rev_efc_4",
     author: "Bhavna Kapoor",
-    rating: 5,
+    rating: 4,
     date: "3 weeks ago",
     comment: "A beautiful choice for festive occasions.",
     verified: true,
@@ -195,7 +278,7 @@ export const emeraldFloralReviews: Review[] = [
   {
     id: "rev_efc_6",
     author: "Mansi Trivedi",
-    rating: 5,
+    rating: 4,
     date: "2 months ago",
     comment: "The green and gold combination looks very traditional.",
     verified: true,
@@ -207,7 +290,7 @@ export const emeraldVineReviews: Review[] = [
   {
     id: "rev_eve_1",
     author: "Rhea Bhattacharya",
-    rating: 5,
+    rating: 4,
     date: "3 days ago",
     comment: "The green stones give this set a fresh and elegant look.",
     verified: true,
@@ -231,7 +314,7 @@ export const emeraldVineReviews: Review[] = [
   {
     id: "rev_eve_4",
     author: "Komal Singhania",
-    rating: 5,
+    rating: 4,
     date: "3 weeks ago",
     comment: "Would look beautiful with a simple kurta or saree.",
     verified: true,
@@ -247,7 +330,7 @@ export const emeraldVineReviews: Review[] = [
   {
     id: "rev_eve_6",
     author: "Akshara Prasad",
-    rating: 5,
+    rating: 3,
     date: "1 month ago",
     comment: "A nice design for someone who likes delicate jewellery.",
     verified: true,
@@ -263,7 +346,7 @@ export const emeraldVineReviews: Review[] = [
   {
     id: "rev_eve_8",
     author: "Lavanya Sundaram",
-    rating: 5,
+    rating: 4,
     date: "2 months ago",
     comment: "Elegant without being overly decorative.",
     verified: true,
@@ -291,7 +374,7 @@ export const goldenBlossomReviews: Review[] = [
   {
     id: "rev_gbc_3",
     author: "Trisha Sengupta",
-    rating: 5,
+    rating: 4,
     date: "1 week ago",
     comment: "The flower pendant adds a nice finishing touch.",
     verified: true,
@@ -299,7 +382,7 @@ export const goldenBlossomReviews: Review[] = [
   {
     id: "rev_gbc_4",
     author: "Malini Krishnan",
-    rating: 5,
+    rating: 4,
     date: "2 weeks ago",
     comment: "I like the sparkle of the white stones.",
     verified: true,
@@ -331,7 +414,7 @@ export const goldenBlossomReviews: Review[] = [
   {
     id: "rev_gbc_8",
     author: "Archana Das",
-    rating: 5,
+    rating: 3,
     date: "2 months ago",
     comment: "The gold finish and crystal combination looks elegant.",
     verified: true,
@@ -339,7 +422,7 @@ export const goldenBlossomReviews: Review[] = [
   {
     id: "rev_gbc_9",
     author: "Rashmi Shenoy",
-    rating: 5,
+    rating: 4,
     date: "2 months ago",
     comment: "Love the continuous flower pattern.",
     verified: true,
@@ -359,7 +442,7 @@ export const daisyBloomReviews: Review[] = [
   {
     id: "rev_dbc_1",
     author: "Natasha D'Souza",
-    rating: 5,
+    rating: 4,
     date: "3 days ago",
     comment: "The daisy pattern is so pretty and delicate.",
     verified: true,
@@ -375,7 +458,7 @@ export const daisyBloomReviews: Review[] = [
   {
     id: "rev_dbc_3",
     author: "Isha Bhasin",
-    rating: 5,
+    rating: 4,
     date: "2 weeks ago",
     comment: "A simple design that still catches the eye.",
     verified: true,
@@ -383,7 +466,7 @@ export const daisyBloomReviews: Review[] = [
   {
     id: "rev_dbc_4",
     author: "Radhika Venkatesh",
-    rating: 5,
+    rating: 3,
     date: "3 weeks ago",
     comment: "The matching studs complement the necklace nicely.",
     verified: true,
@@ -399,7 +482,7 @@ export const daisyBloomReviews: Review[] = [
   {
     id: "rev_dbc_6",
     author: "Bhumika Jain",
-    rating: 5,
+    rating: 4,
     date: "1 month ago",
     comment: "The little flowers give it a graceful look.",
     verified: true,
@@ -435,7 +518,7 @@ export const pinkBlossomReviews: Review[] = [
   {
     id: "rev_pbr_3",
     author: "Aparna Namboodiri",
-    rating: 5,
+    rating: 4,
     date: "1 week ago",
     comment: "The floral design is beautiful and feminine.",
     verified: true,
@@ -451,7 +534,7 @@ export const pinkBlossomReviews: Review[] = [
   {
     id: "rev_pbr_5",
     author: "Jyoti Bharadwaj",
-    rating: 5,
+    rating: 4,
     date: "3 weeks ago",
     comment: "Looks like a lovely set for special occasions.",
     verified: true,
@@ -459,7 +542,7 @@ export const pinkBlossomReviews: Review[] = [
   {
     id: "rev_pbr_6",
     author: "Vidya Shastry",
-    rating: 5,
+    rating: 4,
     date: "1 month ago",
     comment: "The earrings go really well with the necklace.",
     verified: true,
@@ -467,7 +550,7 @@ export const pinkBlossomReviews: Review[] = [
   {
     id: "rev_pbr_7",
     author: "Chandana Gowda",
-    rating: 5,
+    rating: 4,
     date: "1 month ago",
     comment: "The pink details make the design stand out.",
     verified: true,
@@ -503,7 +586,7 @@ export const rubyEmeraldReviews: Review[] = [
   {
     id: "rev_ref_2",
     author: "Amrita Ghosh",
-    rating: 5,
+    rating: 4,
     date: "5 days ago",
     comment: "Love the alternating floral colours.",
     verified: true,
@@ -519,7 +602,7 @@ export const rubyEmeraldReviews: Review[] = [
   {
     id: "rev_ref_4",
     author: "Vasudha Kulkarni",
-    rating: 5,
+    rating: 4,
     date: "3 weeks ago",
     comment: "The little flowers make the necklace look unique.",
     verified: true,
@@ -535,7 +618,7 @@ export const rubyEmeraldReviews: Review[] = [
   {
     id: "rev_ref_6",
     author: "Bhavani Rajan",
-    rating: 5,
+    rating: 4,
     date: "2 months ago",
     comment: "Pretty choice for festive outfits.",
     verified: true,
@@ -555,7 +638,7 @@ export const blushPetalReviews: Review[] = [
   {
     id: "rev_bpe_2",
     author: "Pratibha Chauhan",
-    rating: 5,
+    rating: 4,
     date: "1 week ago",
     comment: "Love the delicate floral pattern.",
     verified: true,
@@ -571,7 +654,7 @@ export const blushPetalReviews: Review[] = [
   {
     id: "rev_bpe_4",
     author: "Rohini Marathe",
-    rating: 5,
+    rating: 4,
     date: "3 weeks ago",
     comment: "The pink colour is subtle rather than too bright.",
     verified: true,
@@ -579,7 +662,7 @@ export const blushPetalReviews: Review[] = [
   {
     id: "rev_bpe_5",
     author: "Kirti Shrivastava",
-    rating: 5,
+    rating: 4,
     date: "1 month ago",
     comment: "Would look lovely with pastel or cream outfits.",
     verified: true,
@@ -603,7 +686,7 @@ export const blushPetalReviews: Review[] = [
   {
     id: "rev_bpe_8",
     author: "Sindhuja Reddy",
-    rating: 5,
+    rating: 4,
     date: "3 months ago",
     comment: "The floral details make this set look elegant.",
     verified: true,
@@ -628,7 +711,7 @@ export const genericJewelryReviews: Review[] = [
   {
     id: "rev_gen_1",
     author: "Aaradhya Joshi",
-    rating: 5,
+    rating: 3,
     date: "4 days ago",
     comment: "Exceptional quality and shine! The finish looks truly luxurious in person.",
     verified: true,

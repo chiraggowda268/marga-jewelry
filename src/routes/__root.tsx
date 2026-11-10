@@ -9,7 +9,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 
 import { Header, Footer } from "../components/site";
 import { ProductModal } from "../components/ProductModal";
@@ -18,6 +18,7 @@ import { UnreachablePage } from "../components/UnreachablePage";
 import { StoreProvider } from "../lib/store";
 import { SITE_MODE } from "../lib/site-mode";
 import appCss from "../styles.css?url";
+import logoDark from "@/assets/marga-logo-dark.png";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -124,6 +125,31 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const location = useLocation();
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const prevPathnameRef = useRef(location.pathname);
+
+  // Smooth page transition and short branded logo loading screen
+  useEffect(() => {
+    // Only trigger on actual pathname changes (not query parameters)
+    if (prevPathnameRef.current === location.pathname) {
+      return undefined;
+    }
+
+    prevPathnameRef.current = location.pathname;
+    setIsPageLoading(true);
+
+    // Instantly scroll smoothly to top on page switch
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    // Short branded micro-splash (280ms) for high-end luxury feel
+    const timer = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 280);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [location.pathname]);
 
   // If not accessing /admin, handle unreachable or maintenance modes
   if (!location.pathname.startsWith("/admin")) {
@@ -152,8 +178,36 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <StoreProvider>
+        {/* Short Branded Logo Loading Screen during page navigation */}
+        {isPageLoading && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-ivory/85 backdrop-blur-xs transition-opacity duration-200 pointer-events-none"
+          >
+            {/* Top Golden Progress Indicator */}
+            <div className="fixed top-0 left-0 right-0 h-[3px] bg-muted overflow-hidden z-[10000]">
+              <div className="h-full w-full bg-gradient-to-r from-gold via-butter to-gold gold-loading-bar" />
+            </div>
+
+            {/* Centered Brand Micro-Splash Card */}
+            <div className="flex flex-col items-center justify-center rounded-3xl bg-ivory/95 border border-border/70 p-6 sm:p-8 shadow-xl">
+              <img
+                src={logoDark}
+                alt="Marga Jewelry"
+                className="h-10 sm:h-12 w-auto object-contain logo-transition-pulse select-none"
+              />
+              <div className="mt-4 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold animate-bounce [animation-delay:-0.3s]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-gold animate-bounce [animation-delay:-0.15s]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-gold animate-bounce" />
+              </div>
+            </div>
+          </div>
+        )}
+
         <Header />
-        <main>
+        <main key={location.pathname} className="page-transition">
           <Outlet />
         </main>
         <Footer />

@@ -86,6 +86,7 @@ function AdminPage() {
     deleteProduct,
     resetCatalog,
     addReview,
+    updateReview,
     deleteReview,
     orders,
     updateOrderStatus,
@@ -151,6 +152,10 @@ function AdminPage() {
     productId: string;
     reviewId: string;
     author: string;
+  } | null>(null);
+  const [editingReview, setEditingReview] = useState<{
+    productId: string;
+    reviewId: string;
   } | null>(null);
 
   const [reviewFormData, setReviewFormData] = useState({
@@ -468,27 +473,57 @@ function AdminPage() {
   const totalReviewsCount = allReviewsWithProduct.length;
   const reviewsWithPhotosCount = allReviewsWithProduct.filter((r) => r.images && r.images.length > 0).length;
 
+  const openEditReviewModal = (item: Review & { product: Product }) => {
+    setEditingReview({ productId: item.product.id, reviewId: item.id });
+    setReviewFormData({
+      productId: item.product.id,
+      author: item.author,
+      rating: Math.round(item.rating) || 5,
+      date: item.date || "Today",
+      comment: item.comment,
+      verified: item.verified !== false,
+      images: item.images ? [...item.images] : [],
+    });
+    setIsAddReviewModalOpen(true);
+  };
+
   const handleSaveReview = (e: FormEvent) => {
     e.preventDefault();
     if (!reviewFormData.productId || !reviewFormData.author.trim() || !reviewFormData.comment.trim()) {
       return;
     }
 
-    addReview(reviewFormData.productId, {
-      author: reviewFormData.author.trim(),
-      rating: Number(reviewFormData.rating),
-      date: reviewFormData.date.trim() || "Today",
-      comment: reviewFormData.comment.trim(),
-      verified: reviewFormData.verified,
-      images: reviewFormData.images.length > 0 ? reviewFormData.images : undefined,
-    });
-
     const targetProd = products.find((p) => p.id === reviewFormData.productId);
-    showProductToast(
-      `Review by ${reviewFormData.author.trim()} added to "${targetProd?.name || "Product"}" with ${reviewFormData.images.length} photos.`
-    );
+
+    if (editingReview) {
+      updateReview(editingReview.productId, editingReview.reviewId, {
+        author: reviewFormData.author.trim(),
+        rating: Number(reviewFormData.rating),
+        date: reviewFormData.date.trim() || "Today",
+        comment: reviewFormData.comment.trim(),
+        verified: reviewFormData.verified,
+        images: reviewFormData.images.length > 0 ? reviewFormData.images : undefined,
+      });
+      showProductToast(
+        `Review by ${reviewFormData.author.trim()} updated successfully.`
+      );
+    } else {
+      addReview(reviewFormData.productId, {
+        author: reviewFormData.author.trim(),
+        rating: Number(reviewFormData.rating),
+        date: reviewFormData.date.trim() || "Today",
+        comment: reviewFormData.comment.trim(),
+        verified: reviewFormData.verified,
+        images: reviewFormData.images.length > 0 ? reviewFormData.images : undefined,
+        isCurated: true, // Store curated review - storefront customers cannot edit
+      });
+      showProductToast(
+        `Review by ${reviewFormData.author.trim()} added to "${targetProd?.name || "Product"}" with ${reviewFormData.images.length} photos.`
+      );
+    }
 
     setIsAddReviewModalOpen(false);
+    setEditingReview(null);
     setReviewFormData({
       productId: products[0]?.id || "",
       author: "",
@@ -990,6 +1025,7 @@ function AdminPage() {
 
               <button
                 onClick={() => {
+                  setEditingReview(null);
                   setReviewFormData({
                     productId: selectedReviewProductId !== "all" ? selectedReviewProductId : (products[0]?.id || ""),
                     author: "",
@@ -1124,19 +1160,28 @@ function AdminPage() {
                             {item.product.category.replace("-", " ")} • {formatINR(item.product.price)}
                           </p>
                         </div>
-                        <button
-                          onClick={() =>
-                            setDeleteReviewConfirm({
-                              productId: item.product.id,
-                              reviewId: item.id,
-                              author: item.author,
-                            })
-                          }
-                          className="rounded-md border border-border p-1.5 text-charcoal hover:bg-destructive/10 hover:text-destructive transition-colors"
-                          title="Delete this review"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => openEditReviewModal(item)}
+                            className="rounded-md border border-border p-1.5 text-charcoal hover:bg-gold/15 hover:text-gold transition-colors"
+                            title="Edit this review"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setDeleteReviewConfirm({
+                                productId: item.product.id,
+                                reviewId: item.id,
+                                author: item.author,
+                              })
+                            }
+                            className="rounded-md border border-border p-1.5 text-charcoal hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            title="Delete this review"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Reviewer Info (Indian Name + Verified Badge) */}
@@ -1909,7 +1954,7 @@ function AdminPage() {
                         if (e.target.files && e.target.files.length > 0) {
                           setIsUploadingImages(true);
                           try {
-                            const newUrls = await processMultipleImageFiles(e.target.files, 1200, 0.82, 'products');
+                            const newUrls = await processMultipleImageFiles(e.target.files, 1080, 0.80, 'products');
                             if (newUrls.length > 0) {
                               setFormData((prev) => {
                                 const hasOnlyPreset = prev.images.every((img) => PRESET_IMAGES.some((p) => p.url === img));
@@ -2258,12 +2303,15 @@ function AdminPage() {
         </div>
       )}
       {/* ============================================================== */}
-      {/* MODAL: ADD CUSTOMER REVIEW WITH PHOTOS */}
+      {/* MODAL: ADD / EDIT CUSTOMER REVIEW WITH PHOTOS */}
       {/* ============================================================== */}
       {isAddReviewModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setIsAddReviewModalOpen(false)}
+          onClick={() => {
+            setIsAddReviewModalOpen(false);
+            setEditingReview(null);
+          }}
         >
           <div
             className="relative max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-ivory p-6 md:p-8 shadow-2xl no-scrollbar"
@@ -2271,13 +2319,20 @@ function AdminPage() {
           >
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
-                <h3 className="font-serif text-2xl text-petrol">Add Customer Review</h3>
+                <h3 className="font-serif text-2xl text-petrol">
+                  {editingReview ? "Edit Customer Review" : "Add Customer Review"}
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Publish a review with authentic Indian customer names and wear photos.
+                  {editingReview
+                    ? "Modify customer review details, ratings, and wear styling photos."
+                    : "Publish a review with authentic Indian customer names and wear photos."}
                 </p>
               </div>
               <button
-                onClick={() => setIsAddReviewModalOpen(false)}
+                onClick={() => {
+                  setIsAddReviewModalOpen(false);
+                  setEditingReview(null);
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted text-charcoal"
               >
                 <X size={18} />
@@ -2402,7 +2457,7 @@ function AdminPage() {
                       if (e.target.files && e.target.files.length > 0) {
                         setIsUploadingReviewPhotos(true);
                         try {
-                          const urls = await processMultipleImageFiles(e.target.files, 1200, 0.82, 'reviews');
+                          const urls = await processMultipleImageFiles(e.target.files, 1080, 0.80, 'reviews');
                           setReviewFormData((prev) => ({
                             ...prev,
                             images: [...prev.images, ...urls],
@@ -2447,7 +2502,10 @@ function AdminPage() {
               <div className="pt-4 flex justify-end gap-3 border-t border-border">
                 <button
                   type="button"
-                  onClick={() => setIsAddReviewModalOpen(false)}
+                  onClick={() => {
+                    setIsAddReviewModalOpen(false);
+                    setEditingReview(null);
+                  }}
                   className="rounded-lg border border-border px-5 py-2.5 eyebrow text-xs text-charcoal hover:bg-muted"
                 >
                   Cancel
@@ -2457,7 +2515,7 @@ function AdminPage() {
                   disabled={isUploadingReviewPhotos}
                   className="rounded-lg bg-petrol px-6 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-xs disabled:opacity-50"
                 >
-                  Publish Review
+                  {editingReview ? "Update Review" : "Publish Review"}
                 </button>
               </div>
             </form>

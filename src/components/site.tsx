@@ -65,15 +65,22 @@ export function Header() {
       </div>
 
       <header className="sticky top-0 z-40 border-b border-border bg-ivory">
-        <div className="mx-auto grid h-20 max-w-7xl grid-cols-[auto_1fr_auto] items-center px-4 md:grid-cols-[1fr_auto_1fr] md:px-8 md:h-24">
-          <button aria-label="Open menu" className={`${icon} md:hidden`} onClick={() => setMenu(true)}>
-            <Menu size={22} />
-          </button>
+        <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between px-4 md:h-24 md:px-8">
+          {/* Mobile Left: Menu Toggle Button */}
+          <div className="flex items-center md:hidden z-10">
+            <button aria-label="Open menu" className={icon} onClick={() => setMenu(true)}>
+              <Menu size={22} />
+            </button>
+          </div>
 
-          <Link to="/" className="justify-self-center md:justify-self-start">
-            <Logo className="h-14 w-auto md:h-[72px]" />
-          </Link>
+          {/* Brand Logo: Mathematically locked to absolute center on mobile so signing in never offsets it */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 z-10 pointer-events-auto">
+            <Link to="/" className="block">
+              <Logo className="h-12 w-auto sm:h-14 md:h-[72px]" />
+            </Link>
+          </div>
 
+          {/* Desktop Navigation Links */}
           <nav className="hidden items-center gap-9 md:flex">
             {nav.map((n) => (
               <Link
@@ -88,7 +95,7 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="flex items-center justify-self-end relative">
+          <div className="flex items-center justify-end relative z-10">
             <button
               aria-label="Search"
               className={`${icon} hidden md:grid`}

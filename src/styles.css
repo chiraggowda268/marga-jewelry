@@ -98,3 +98,53 @@ netlify-drawer {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* Page Transition Animations */
+@keyframes pageFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: pageFadeSlide 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+@keyframes logoPulseGlow {
+  0%, 100% {
+    opacity: 0.95;
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(201, 168, 118, 0));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+    filter: drop-shadow(0 4px 12px rgba(201, 168, 118, 0.35));
+  }
+}
+
+.logo-transition-pulse {
+  animation: logoPulseGlow 0.9s ease-in-out infinite;
+}
+
+@keyframes goldProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.gold-loading-bar {
+  animation: goldProgress 0.8s ease-in-out infinite;
+}
