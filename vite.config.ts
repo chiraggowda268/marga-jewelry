@@ -17,7 +17,7 @@ export default defineConfig({
       ? "netlify"
       : process.env["VERCEL"]
         ? "vercel"
-        : (process.env["NITRO_PRESET"] || "cloudflare-module"),
+        : (process.env["NITRO_PRESET"] || "cloudflare-pages"),
   },
   vite: {
     server: {
