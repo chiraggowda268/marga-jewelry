@@ -1,8 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Truck, ShieldCheck, RefreshCw, Gem } from "lucide-react";
 import hero from "@/assets/hero.jpg";
-import editorial from "@/assets/editorial.jpg";
-import promo from "@/assets/promo.jpg";
 import { categories } from "@/lib/catalog";
 import { ProductCard } from "@/components/site";
 import { useStore } from "@/lib/store";
@@ -51,17 +49,6 @@ function Index() {
         </div>
       </section>
 
-      {/* Editorial */}
-      <section className="grid bg-butter md:grid-cols-2">
-        <img src={editorial} alt="Stacked gold rings and bracelet" loading="lazy" className="h-80 w-full object-cover md:h-[560px]" />
-        <div className="flex flex-col justify-center px-6 py-12 md:px-16 lg:px-24">
-          <p className="eyebrow text-gold">Our Philosophy</p>
-          <h2 className="mt-4 text-4xl leading-tight text-petrol lg:text-5xl">Designed for Your Everyday</h2>
-          <p className="mt-5 max-w-md text-charcoal/80">Lightweight, skin-friendly and made to last — Marga pieces move with you from morning coffee to evening plans.</p>
-          <Link to="/about" className="mt-8 inline-flex h-12 items-center self-start rounded-lg bg-petrol px-8 eyebrow text-ivory hover:bg-charcoal">Our Story</Link>
-        </div>
-      </section>
-
       {/* Bestsellers */}
       <section className="mx-auto max-w-7xl px-4 py-16 md:px-8">
         <div className="flex items-end justify-between">
@@ -72,18 +59,6 @@ function Index() {
           {products.slice(0, 5).map((p) => (
             <div key={p.id} className="w-[62%] shrink-0 snap-start sm:w-[40%] md:w-auto"><ProductCard p={p} /></div>
           ))}
-        </div>
-      </section>
-
-      {/* Promo */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 md:px-8">
-        <div className="grid bg-petrol md:grid-cols-2">
-          <div className="flex flex-col justify-center px-6 py-12 text-ivory md:px-14">
-            <p className="eyebrow text-gold">The Marga Edit</p>
-            <h2 className="mt-4 text-3xl leading-tight md:text-5xl">Everyday pieces for your unique story.</h2>
-            <Link to="/shop" className={`${btn} mt-8 self-start`}>Shop the Edit</Link>
-          </div>
-          <img src={promo} alt="Gold hoops and pendant on linen" loading="lazy" className="h-72 w-full object-cover md:h-[420px]" />
         </div>
       </section>
 

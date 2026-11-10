@@ -586,40 +586,45 @@ export function Footer() {
     setEmail("");
   };
 
-  const col = "eyebrow mb-4 text-gold";
-  const link = "block py-1.5 text-sm text-ivory/80 hover:text-butter transition-colors";
+  const col = "eyebrow mb-2.5 md:mb-4 text-gold text-xs";
+  const link = "block py-1 md:py-1.5 text-xs md:text-sm text-ivory/80 hover:text-butter transition-colors";
 
   return (
     <footer className="bg-petrol text-ivory">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.6fr] md:px-8">
+      <div className="mx-auto grid max-w-7xl gap-6 md:gap-10 px-5 py-8 md:px-8 md:py-14 md:grid-cols-[1.2fr_1fr_1fr_1.6fr]">
+        {/* Brand Summary */}
         <div>
-          <Logo light className="h-20 w-auto" />
-          <p className="mt-4 max-w-xs text-sm text-ivory/70 leading-relaxed">
+          <Logo light className="h-10 md:h-14 w-auto" />
+          <p className="mt-2.5 md:mt-4 max-w-xs text-xs md:text-sm text-ivory/70 leading-relaxed">
             Everyday fine jewelry, designed to be worn, stacked, and loved for a lifetime.
           </p>
         </div>
 
-        <div>
-          <p className={col}>Shop</p>
-          <Link to="/shop" className={link}>All Jewelry</Link>
-          <Link to="/collections" className={link}>Collections</Link>
-          <Link to="/shop" search={{ category: "necklaces" }} className={link}>Necklaces</Link>
-          <Link to="/shop" search={{ category: "earrings" }} className={link}>Earrings</Link>
-          <Link to="/shop" search={{ category: "bracelets" }} className={link}>Bracelets</Link>
-          <Link to="/shop" search={{ category: "rings" }} className={link}>Rings</Link>
+        {/* Navigation Links: 2-column grid on mobile to save vertical space */}
+        <div className="grid grid-cols-2 gap-4 md:contents">
+          <div>
+            <p className={col}>Shop</p>
+            <Link to="/shop" className={link}>All Jewelry</Link>
+            <Link to="/collections" className={link}>Collections</Link>
+            <Link to="/shop" search={{ category: "necklaces" }} className={link}>Necklaces</Link>
+            <Link to="/shop" search={{ category: "earrings" }} className={link}>Earrings</Link>
+            <Link to="/shop" search={{ category: "bracelets" }} className={link}>Bracelets</Link>
+            <Link to="/shop" search={{ category: "rings" }} className={link}>Rings</Link>
+          </div>
+
+          <div>
+            <p className={col}>Customer Care</p>
+            <Link to="/account" className={link}>My Account & Orders</Link>
+            <Link to="/contact" className={link}>Contact & Inquiries</Link>
+            <Link to="/about" className={link}>Our Story</Link>
+            <Link to="/contact" className={link}>Shipping & Hassle-Free Returns</Link>
+          </div>
         </div>
 
-        <div>
-          <p className={col}>Customer Care</p>
-          <Link to="/account" className={link}>My Account & Orders</Link>
-          <Link to="/contact" className={link}>Contact & Inquiries</Link>
-          <Link to="/about" className={link}>Our Story</Link>
-          <Link to="/contact" className={link}>Shipping & Hassle-Free Returns</Link>
-        </div>
-
+        {/* Newsletter & Socials */}
         <div>
           <p className={col}>Join our newsletter</p>
-          <p className="mb-4 text-sm text-ivory/70">
+          <p className="mb-3 md:mb-4 text-xs md:text-sm text-ivory/70">
             Exclusive releases, style edits, and stories, delivered directly to your inbox.
           </p>
           <form onSubmit={submit} noValidate className="flex w-full">
@@ -629,22 +634,22 @@ export function Footer() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
               aria-label="Email"
-              className="h-12 min-w-0 flex-1 rounded-l-lg border border-ivory/30 bg-transparent px-4 text-sm text-ivory placeholder:text-ivory/50 outline-none focus:border-gold"
+              className="h-10 md:h-12 min-w-0 flex-1 rounded-l-lg border border-ivory/30 bg-transparent px-3 md:px-4 text-xs md:text-sm text-ivory placeholder:text-ivory/50 outline-none focus:border-gold"
             />
-            <button className="h-12 shrink-0 rounded-r-lg bg-butter px-5 eyebrow text-petrol hover:bg-gold transition-colors">
+            <button className="h-10 md:h-12 shrink-0 rounded-r-lg bg-butter px-3.5 md:px-5 eyebrow text-xs md:text-sm text-petrol hover:bg-gold transition-colors">
               Subscribe
             </button>
           </form>
-          {msg && <p className={`mt-2 text-sm ${msg.ok ? "text-butter" : "text-gold"}`}>{msg.t}</p>}
-          <div className="mt-6 flex gap-2">
+          {msg && <p className={`mt-2 text-xs md:text-sm ${msg.ok ? "text-butter" : "text-gold"}`}>{msg.t}</p>}
+          <div className="mt-4 md:mt-6 flex gap-2">
             <a
               href="https://www.instagram.com/margajewelryy/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow Marga Jewelry on Instagram"
-              className="grid h-11 w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
+              className="grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
             >
-              <Instagram size={18} strokeWidth={1.5} />
+              <Instagram size={16} strokeWidth={1.5} />
             </a>
             {[Facebook, Youtube].map((I, i) => (
               <a
@@ -653,15 +658,15 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Social"
-                className="grid h-11 w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
+                className="grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
               >
-                <I size={18} strokeWidth={1.5} />
+                <I size={16} strokeWidth={1.5} />
               </a>
             ))}
           </div>
         </div>
       </div>
-      <div className="border-t border-ivory/15 py-5 text-center text-xs text-ivory/60">
+      <div className="border-t border-ivory/15 py-3 md:py-4 text-center text-[11px] md:text-xs text-ivory/60">
         © 2026 Marga Jewelry. All rights reserved.
       </div>
     </footer>

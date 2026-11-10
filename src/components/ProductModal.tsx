@@ -16,6 +16,7 @@ import {
   UploadCloud,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Maximize2,
   Image as ImageIcon,
 } from "lucide-react";
@@ -56,8 +57,8 @@ export function ProductModal() {
   const [enlargedTouchStartX, setEnlargedTouchStartX] = useState<number | null>(null);
   const [enlargedTouchDeltaX, setEnlargedTouchDeltaX] = useState(0);
 
-  // Reviews Tray Ref
-  const reviewsTrayRef = useRef<HTMLDivElement | null>(null);
+  // Reviews Dropdown State (Amazon style expandable tray)
+  const [isReviewsDropdownOpen, setIsReviewsDropdownOpen] = useState(false);
 
   // Write & Edit Review State
   const [isWritingReview, setIsWritingReview] = useState(false);
@@ -245,16 +246,6 @@ export function ProductModal() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [quickViewProduct, allImages.length, enlargedPhotoIndex]);
 
-  // Scroll controls for reviews tray
-  const handleScrollReviewsTray = (dir: "left" | "right") => {
-    if (!reviewsTrayRef.current) return;
-    const scrollAmount = Math.min(reviewsTrayRef.current.clientWidth * 0.85, 360);
-    reviewsTrayRef.current.scrollBy({
-      left: dir === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
-  };
-
   if (!quickViewProduct) return null;
 
   const p = quickViewProduct;
@@ -278,6 +269,7 @@ export function ProductModal() {
   const handleStartEditReview = (rev: Review) => {
     // Only original poster on their device/account can edit their review
     if (!canCustomerEditReview(rev, currentUser?.id)) return;
+    setIsReviewsDropdownOpen(true);
     setEditingReviewId(rev.id);
     setNewAuthor(rev.author);
     setNewRating(Math.round(rev.rating) || 5);
@@ -614,338 +606,330 @@ export function ProductModal() {
           </div>
 
           {/* ============================================================== */}
-          {/* CUSTOMER REVIEWS SECTION FOR EACH PRODUCT */}
+          {/* AMAZON-STYLE CUSTOMER REVIEWS DROPDOWN TRAY */}
           {/* ============================================================== */}
-          <div className="border-t border-border bg-card/40 px-6 py-10 md:px-10">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-border/80">
-              <div>
-                <div className="flex items-center gap-2 eyebrow text-gold text-xs">
-                  <MessageSquare size={14} />
-                  <span>Customer Reviews</span>
-                </div>
-                <h3 className="font-serif text-2xl text-petrol mt-1">Loved by Our Community</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Authentic feedback from verified customers across India.
-                </p>
-              </div>
-
-              {/* Rating Summary, Tray Controls & Write Review Button */}
-              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                <div className="flex items-center gap-3 bg-ivory border border-border rounded-xl px-4 py-2.5 shadow-2xs">
-                  <div className="text-center pr-3 border-r border-border">
-                    <span className="font-serif text-2xl font-bold text-petrol leading-none">
-                      {averageRating}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground block mt-0.5">out of 5</span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-0.5 text-amber-500">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} size={14} className="fill-amber-500" />
-                      ))}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground block mt-0.5 font-medium">
-                      {reviewsCount} verified reviews
-                    </span>
-                  </div>
-                </div>
-
-                {/* Reviews Tray Left/Right Navigation Chevrons */}
-                <div className="flex items-center gap-1 bg-ivory border border-border/80 rounded-xl p-1 shadow-2xs">
-                  <button
-                    type="button"
-                    aria-label="Previous reviews in tray"
-                    onClick={() => handleScrollReviewsTray("left")}
-                    className="grid h-8 w-8 place-items-center rounded-lg text-charcoal hover:bg-petrol hover:text-ivory transition-all active:scale-95 cursor-pointer"
-                    title="Slide left"
-                  >
-                    <ChevronLeft size={17} />
-                  </button>
-                  <span className="text-[10px] font-medium text-muted-foreground px-1.5 border-x border-border/60 select-none">
-                    Tray
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Next reviews in tray"
-                    onClick={() => handleScrollReviewsTray("right")}
-                    className="grid h-8 w-8 place-items-center rounded-lg text-charcoal hover:bg-petrol hover:text-ivory transition-all active:scale-95 cursor-pointer"
-                    title="Slide right"
-                  >
-                    <ChevronRight size={17} />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isWritingReview) {
-                      handleCancelReviewForm();
-                    } else {
-                      setIsWritingReview(true);
-                    }
-                  }}
-                  className="flex items-center gap-1.5 rounded-xl border border-petrol/30 bg-petrol px-4 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-2xs cursor-pointer"
-                >
-                  <Plus size={14} />
-                  <span>{isWritingReview ? "Cancel" : "Write a Review"}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Feedback notification when review is submitted */}
-            {reviewSubmitted && (
-              <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800 animate-in fade-in">
-                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                <span>{reviewSuccessMessage}</span>
-              </div>
-            )}
-
-            {/* Interactive Write a Review Form */}
-            {isWritingReview && (
-              <form
-                onSubmit={handleAddReview}
-                className="mt-6 rounded-2xl border border-border bg-ivory p-6 shadow-sm animate-in slide-in-from-top-2 duration-150"
-              >
-                <h4 className="font-serif text-lg text-petrol">
-                  {editingReviewId ? "Edit Your Review" : "Share Your Experience"}
-                </h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {editingReviewId
-                    ? "Update your review, rating, or styling photos."
-                    : "Tell us how you style this piece and what you loved most."}
-                </p>
-
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-charcoal">
-                      Your Name (Indian name, e.g. Priya Sharma) *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      value={newAuthor}
-                      onChange={(e) => setNewAuthor(e.target.value)}
-                      placeholder="e.g. Ananya Rao"
-                      className="h-10 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-charcoal">Rating *</label>
-                    <div className="flex items-center gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setNewRating(star)}
-                          className="p-1 hover:scale-110 transition-transform"
-                          title={`${star} star`}
-                        >
-                          <Star
-                            size={20}
-                            className={`${
-                              star <= newRating
-                                ? "text-amber-500 fill-amber-500"
-                                : "text-muted-foreground/30"
-                            }`}
-                          />
-                        </button>
-                      ))}
-                      <span className="text-xs text-muted-foreground ml-2 font-medium">
-                        {newRating} / 5 Stars
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-charcoal">Your Review *</label>
-                    <textarea
-                      required
-                      rows={3}
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Describe the quality, design, and how it pairs with your outfits..."
-                      className="w-full rounded-lg border border-input bg-card p-3 text-xs text-charcoal outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  {/* Photo Upload for Review */}
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-charcoal">
-                      Upload Photos (Optional wear & styling photos)
-                    </label>
-                    <label className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-card px-3 text-xs text-muted-foreground hover:border-gold hover:text-charcoal transition-colors">
-                      <UploadCloud size={16} />
-                      <span>{isUploadingPhotos ? "Optimizing Photos..." : "Upload Photos From Local Computer"}</span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*,.heic,.HEIC,.jpg,.jpeg,.png,.webp,.jfif,.avif"
-                        className="hidden"
-                        onChange={async (e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            setIsUploadingPhotos(true);
-                            try {
-                              const urls = await processMultipleImageFiles(e.target.files);
-                              setReviewPhotos((prev) => [...prev, ...urls]);
-                            } catch (err) {
-                              console.error("Failed to upload photos:", err);
-                            } finally {
-                              setIsUploadingPhotos(false);
-                            }
-                          }
-                        }}
-                      />
-                    </label>
-
-                    {reviewPhotos.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 mt-3">
-                        {reviewPhotos.map((imgUrl, i) => (
-                          <div key={i} className="relative h-14 w-14 rounded-lg overflow-hidden border border-border group">
-                            <img src={imgUrl} alt="Review upload preview" className="h-full w-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setReviewPhotos((prev) => prev.filter((_, idx) => idx !== i))}
-                              className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-charcoal/80 text-ivory text-[10px] hover:bg-destructive transition-colors"
-                              title="Remove photo"
-                            >
-                              <X size={10} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={handleCancelReviewForm}
-                      className="rounded-lg border border-border px-4 py-2 eyebrow text-xs text-charcoal hover:bg-muted"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isUploadingPhotos}
-                      className="rounded-lg bg-petrol px-5 py-2 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-2xs disabled:opacity-50"
-                    >
-                      {editingReviewId ? "Update Review" : "Post Review"}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
-
-            {/* Reviews Horizontal Tray (Snap Slider instead of long vertical scrolling list) */}
-            <div
-              ref={reviewsTrayRef}
-              className="mt-6 flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-2 px-1 focus:outline-none"
-              tabIndex={0}
+          <div className="border-t border-border bg-card/60">
+            {/* Amazon-Style Expandable Dropdown Header Bar */}
+            <button
+              type="button"
+              onClick={() => setIsReviewsDropdownOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between p-4 sm:p-5 md:px-8 hover:bg-muted/40 transition-colors cursor-pointer select-none text-left"
+              aria-expanded={isReviewsDropdownOpen}
             >
-              {allProductReviews.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="w-[85vw] sm:w-[320px] md:w-[360px] shrink-0 snap-start flex flex-col justify-between rounded-2xl border border-border/80 bg-ivory p-5 shadow-2xs hover:border-gold/50 transition-all hover:shadow-xs"
-                >
-                  <div>
-                    {/* Review Header: Name & Verified Badge (NO profile photos) */}
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-serif text-sm font-semibold text-petrol tracking-tight">
-                        {rev.author}
-                      </p>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-800 border border-emerald-200/70 shrink-0">
-                        <CheckCircle2 size={11} className="text-emerald-600" />
-                        Verified Buyer
-                      </span>
-                    </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare size={16} className="text-gold" />
+                  <span className="font-serif text-lg sm:text-xl font-medium text-petrol">
+                    Customer Reviews
+                  </span>
+                </div>
 
-                    {/* Rating Stars & Relative Date */}
-                    <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-0.5 text-amber-500">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center text-amber-500">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={13}
+                        className={
+                          s <= Math.round(averageRating)
+                            ? "fill-amber-500 text-amber-500"
+                            : "text-muted-foreground/30"
+                        }
+                      />
+                    ))}
+                  </div>
+                  <span className="font-semibold text-charcoal">{averageRating}</span>
+                  <span className="text-muted-foreground">({reviewsCount} verified reviews)</span>
+                </div>
+              </div>
+
+              {/* Dropdown Chevron Indicator */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-medium text-petrol hidden sm:inline">
+                  {isReviewsDropdownOpen ? "Hide Reviews" : "Read Reviews"}
+                </span>
+                <div
+                  className={`grid h-8 w-8 place-items-center rounded-full bg-ivory border border-border shadow-2xs transition-transform duration-200 ${
+                    isReviewsDropdownOpen ? "rotate-180" : ""
+                  }`}
+                >
+                  <ChevronDown size={17} className="text-petrol" />
+                </div>
+              </div>
+            </button>
+
+            {/* Dropped Down Reviews Content (Amazon Style) */}
+            {isReviewsDropdownOpen && (
+              <div className="px-5 pb-8 pt-2 md:px-8 border-t border-border/60 animate-in fade-in duration-200">
+                {/* Header Summary & Write Review CTA */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-b border-border/80">
+                  <div>
+                    <h3 className="font-serif text-xl text-petrol">Verified Customer Feedback</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Ratings and real experiences from verified purchasers across India.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isWritingReview) {
+                        handleCancelReviewForm();
+                      } else {
+                        setIsWritingReview(true);
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-petrol/30 bg-petrol px-4 py-2.5 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-2xs cursor-pointer shrink-0"
+                  >
+                    <Plus size={14} />
+                    <span>{isWritingReview ? "Cancel" : "Write a Review"}</span>
+                  </button>
+                </div>
+
+                {/* Feedback notification when review is submitted */}
+                {reviewSubmitted && (
+                  <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800 animate-in fade-in">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    <span>{reviewSuccessMessage}</span>
+                  </div>
+                )}
+
+                {/* Interactive Write a Review Form */}
+                {isWritingReview && (
+                  <form
+                    onSubmit={handleAddReview}
+                    className="mt-6 rounded-2xl border border-border bg-ivory p-5 sm:p-6 shadow-sm animate-in slide-in-from-top-2 duration-150"
+                  >
+                    <h4 className="font-serif text-lg text-petrol">
+                      {editingReviewId ? "Edit Your Review" : "Share Your Experience"}
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {editingReviewId
+                        ? "Update your review, rating, or styling photos."
+                        : "Tell us how you style this piece and what you loved most."}
+                    </p>
+
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-charcoal">
+                          Your Name (Indian name, e.g. Priya Sharma) *
+                        </label>
+                        <input
+                          required
+                          type="text"
+                          value={newAuthor}
+                          onChange={(e) => setNewAuthor(e.target.value)}
+                          placeholder="e.g. Ananya Rao"
+                          className="h-10 w-full rounded-lg border border-input bg-card px-3 text-xs text-charcoal outline-none focus:border-gold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-charcoal">Rating *</label>
+                        <div className="flex items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewRating(star)}
+                              className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                              title={`${star} star`}
+                            >
+                              <Star
+                                size={20}
+                                className={`${
+                                  star <= newRating
+                                    ? "text-amber-500 fill-amber-500"
+                                    : "text-muted-foreground/30"
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          <span className="text-xs text-muted-foreground ml-2 font-medium">
+                            {newRating} / 5 Stars
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-charcoal">Your Review *</label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Describe the quality, design, and how it pairs with your outfits..."
+                          className="w-full rounded-lg border border-input bg-card p-3 text-xs text-charcoal outline-none focus:border-gold"
+                        />
+                      </div>
+
+                      {/* Photo Upload for Review */}
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-charcoal">
+                          Upload Photos (Optional wear & styling photos)
+                        </label>
+                        <label className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-card px-3 text-xs text-muted-foreground hover:border-gold hover:text-charcoal transition-colors">
+                          <UploadCloud size={16} />
+                          <span>{isUploadingPhotos ? "Optimizing Photos..." : "Upload Photos From Local Computer"}</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*,.heic,.HEIC,.jpg,.jpeg,.png,.webp,.jfif,.avif"
+                            className="hidden"
+                            onChange={async (e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                setIsUploadingPhotos(true);
+                                try {
+                                  const urls = await processMultipleImageFiles(e.target.files);
+                                  setReviewPhotos((prev) => [...prev, ...urls]);
+                                } catch (err) {
+                                  console.error("Failed to upload photos:", err);
+                                } finally {
+                                  setIsUploadingPhotos(false);
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+
+                        {reviewPhotos.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2 mt-3">
+                            {reviewPhotos.map((imgUrl, i) => (
+                              <div key={i} className="relative h-14 w-14 rounded-lg overflow-hidden border border-border group">
+                                <img src={imgUrl} alt="Review upload preview" className="h-full w-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => setReviewPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                                  className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-charcoal/80 text-ivory text-[10px] hover:bg-destructive transition-colors cursor-pointer"
+                                  title="Remove photo"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleCancelReviewForm}
+                          className="rounded-lg border border-border px-4 py-2 eyebrow text-xs text-charcoal hover:bg-muted cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isUploadingPhotos}
+                          className="rounded-lg bg-petrol px-5 py-2 eyebrow text-xs text-ivory hover:bg-charcoal transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+                        >
+                          {editingReviewId ? "Update Review" : "Post Review"}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+
+                {/* Amazon-Style Clean Vertical Reviews List */}
+                <div className="mt-4 divide-y divide-border/60">
+                  {allProductReviews.map((rev) => (
+                    <div key={rev.id} className="py-4 first:pt-2 last:pb-2">
+                      {/* Reviewer Name, Verified Badge & Relative Date */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-serif text-sm font-semibold text-petrol">
+                            {rev.author}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-800 border border-emerald-200/70">
+                            <CheckCircle2 size={11} className="text-emerald-600" />
+                            Verified Purchase
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground font-normal">{rev.date}</span>
+                      </div>
+
+                      {/* Rating Stars & Score */}
+                      <div className="mt-1 flex items-center gap-1 text-amber-500">
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Star
                             key={s}
                             size={12}
                             className={
                               s <= Math.round(rev.rating)
-                                ? "text-amber-500 fill-amber-500"
+                                ? "fill-amber-500 text-amber-500"
                                 : "text-muted-foreground/30"
                             }
                           />
                         ))}
+                        <span className="text-[11px] text-charcoal/70 font-medium ml-1">
+                          {Math.round(rev.rating)} out of 5 stars
+                        </span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground font-normal">{rev.date}</span>
-                    </div>
 
-                    {/* Review Text */}
-                    <p className="mt-3 text-xs leading-relaxed text-charcoal/85 italic line-clamp-4">
-                      “{rev.comment.replace(/^["“”]|["“”]$/g, "")}”
-                    </p>
+                      {/* Review Text */}
+                      <p className="mt-2 text-xs leading-relaxed text-charcoal/85 italic">
+                        “{rev.comment.replace(/^["“”]|["“”]$/g, "")}”
+                      </p>
 
-                    {/* Customer Review Photos (if any) */}
-                    {rev.images && rev.images.length > 0 && (
-                      <div className="mt-3 pt-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                        {rev.images.map((photoUrl, pIdx) => (
-                          <button
-                            key={pIdx}
-                            type="button"
-                            onClick={() => setLightboxImg(photoUrl)}
-                            className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-border shadow-2xs hover:scale-105 hover:border-gold transition-all cursor-pointer"
-                            title="Click to zoom customer wear photo"
-                          >
-                            <img
-                              src={photoUrl}
-                              alt={`${rev.author} jewelry review photo ${pIdx + 1}`}
-                              className="h-full w-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Card Footer: Verified Product Purchase Tag & Original Poster Edit Action */}
-                  <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span className="truncate max-w-[150px] sm:max-w-[180px]">Item: {p.name}</span>
-                    <div className="flex items-center gap-3">
-                      {canCustomerEditReview(rev, currentUser?.id) && (
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditReview(rev)}
-                          className="flex items-center gap-1 font-medium text-petrol hover:text-gold transition-colors cursor-pointer"
-                          title="Edit your review"
-                        >
-                          <Pencil size={11} /> Edit
-                        </button>
+                      {/* Customer Review Photos (if any) */}
+                      {rev.images && rev.images.length > 0 && (
+                        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                          {rev.images.map((photoUrl, pIdx) => (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              onClick={() => setLightboxImg(photoUrl)}
+                              className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-border shadow-2xs hover:scale-105 hover:border-gold transition-all cursor-pointer"
+                              title="Click to zoom wear photo"
+                            >
+                              <img
+                                src={photoUrl}
+                                alt={`${rev.author} wear photo ${pIdx + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
                       )}
-                      <span className="flex items-center gap-1 text-muted-foreground/80">
-                        <ThumbsUp size={11} className="text-gold/80" /> Helpful
-                      </span>
+
+                      {/* Review Footer: Helpful & Author Edit */}
+                      <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1 text-muted-foreground/80">
+                          <ThumbsUp size={11} className="text-gold" /> Helpful
+                        </span>
+                        {canCustomerEditReview(rev, currentUser?.id) && (
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditReview(rev)}
+                            className="flex items-center gap-1 font-medium text-petrol hover:text-gold transition-colors cursor-pointer"
+                            title="Edit your review"
+                          >
+                            <Pencil size={11} /> Edit your review
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Tray Swipe & Explore Hint */}
-            <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground px-1">
-              <span className="flex items-center gap-1.5 font-medium text-petrol">
-                <Sparkles size={12} className="text-gold" />
-                <span>Showing all {reviewsCount} reviews • Swipe or use arrows to view</span>
-              </span>
-              <span className="hidden sm:inline-block">Authentic Community Ratings</span>
-            </div>
-
-            {/* Bottom Trust Banner */}
-            <div className="mt-6 rounded-xl border border-border/60 bg-ivory/60 p-4 text-center">
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <ShieldCheck size={15} className="text-gold" />
-                <span>
-                  All reviews are collected from authentic buyers with confirmed orders. No compensated or sponsored ratings.
-                </span>
-              </p>
-            </div>
+                {/* Bottom Trust Banner & Collapse Toggle */}
+                <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <p className="flex items-center gap-1.5 text-[11px]">
+                    <ShieldCheck size={14} className="text-gold shrink-0" />
+                    <span>All reviews are from verified orders. No sponsored ratings.</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewsDropdownOpen(false)}
+                    className="flex items-center gap-1 text-petrol hover:text-gold font-medium transition-colors cursor-pointer text-xs"
+                  >
+                    <span>Collapse reviews</span>
+                    <ChevronDown size={14} className="rotate-180" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
