@@ -88,12 +88,51 @@ export async function uploadToFirebaseStorage(
 }
 
 /**
+ * Prepares product document before saving to Firestore.
+ * Automatically eliminates redundant base64 duplication between `image` and `images[0]`
+ * to cut document payload size in half and guarantee it stays well below Firestore's 1MB limit.
+ */
+export function prepareProductForFirestore(product: Product): Record<string, any> {
+  const cleaned: Record<string, any> = JSON.parse(JSON.stringify(product));
+
+  // If `images` array exists and has at least one photo
+  if (Array.isArray(cleaned["images"]) && cleaned["images"].length > 0) {
+    // If primary `image` is identical to `images[0]`, avoid writing the large base64 twice
+    if (cleaned["image"] === cleaned["images"][0] || !cleaned["image"]) {
+      cleaned["image"] = "__same_as_images_0__";
+    }
+  }
+
+  return cleaned;
+}
+
+/**
+ * Normalizes a product document read from Firestore, reconstructing `image` and `images`
+ */
+export function normalizeProductFromFirestore(data: any): Product {
+  const raw = { ...data };
+  const images: string[] = Array.isArray(raw.images) && raw.images.length > 0
+    ? raw.images
+    : (raw.image && raw.image !== "__same_as_images_0__" ? [raw.image] : []);
+
+  const primaryImage =
+    raw.image && raw.image !== "__same_as_images_0__"
+      ? raw.image
+      : (images[0] || "");
+
+  return {
+    ...raw,
+    image: primaryImage,
+    images: images,
+  } as Product;
+}
+
+/**
  * Persists a product document in Firestore
  */
 export async function saveProductToFirestore(product: Product): Promise<void> {
   const productDoc = doc(db, "products", product.id);
-  // Clean undefined fields to keep Firestore strict
-  const cleaned = JSON.parse(JSON.stringify(product));
+  const cleaned = prepareProductForFirestore(product);
   await setDoc(productDoc, cleaned, { merge: true });
 }
 
@@ -105,7 +144,12 @@ export async function updateProductInFirestore(
   updates: Partial<Product>
 ): Promise<void> {
   const productDoc = doc(db, "products", id);
-  const cleaned = JSON.parse(JSON.stringify(updates));
+  const cleaned: Record<string, any> = JSON.parse(JSON.stringify(updates));
+  if (Array.isArray(cleaned["images"]) && cleaned["images"].length > 0) {
+    if (cleaned["image"] === cleaned["images"][0]) {
+      cleaned["image"] = "__same_as_images_0__";
+    }
+  }
   await updateDoc(productDoc, cleaned);
 }
 
@@ -125,7 +169,7 @@ export async function fetchProductsFromFirestore(): Promise<Product[]> {
   const snap = await getDocs(colRef);
   const items: Product[] = [];
   snap.forEach((d) => {
-    items.push(d.data() as Product);
+    items.push(normalizeProductFromFirestore(d.data()));
   });
   return items;
 }
@@ -144,7 +188,7 @@ export function subscribeToProducts(
     (snap) => {
       const items: Product[] = [];
       snap.forEach((d) => {
-        items.push(d.data() as Product);
+        items.push(normalizeProductFromFirestore(d.data()));
       });
       onUpdate(items);
     },

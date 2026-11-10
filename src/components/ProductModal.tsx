@@ -780,7 +780,7 @@ export function ProductModal() {
                       <input
                         type="file"
                         multiple
-                        accept="image/*"
+                        accept="image/*,.heic,.HEIC,.jpg,.jpeg,.png,.webp,.jfif,.avif"
                         className="hidden"
                         onChange={async (e) => {
                           if (e.target.files && e.target.files.length > 0) {

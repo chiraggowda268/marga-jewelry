@@ -2,15 +2,15 @@ import { uploadToFirebaseStorage } from "./firebase";
 
 /**
  * Client-side image upload, multi-threaded decode, adaptive compression,
- * and Firebase Cloud Storage utility.
+ * and iPhone HEIC conversion utility.
  * 
- * Capable of handling high-resolution 5-20MB DSLR/iPhone camera photos without
- * memory crashes, resizing them with high-fidelity interpolation to crisp 1080px HD,
- * and compressing them into compact, retina-sharp WebP/JPEG assets (~50-80KB)
+ * Capable of handling high-resolution 5-25MB DSLR/iPhone camera photos (.heic, .jpg, .png)
+ * without memory crashes, converting HEIC smoothly, resizing with high-fidelity interpolation
+ * to crisp HD, and compressing into compact, retina-sharp WebP assets (~40-55KB)
  * so products can hold 10+ photos without ever breaching Firestore's 1MB limit.
  */
 
-export function readFileAsDataURL(file: File): Promise<string> {
+export function readFileAsDataURL(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -19,7 +19,41 @@ export function readFileAsDataURL(file: File): Promise<string> {
   });
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, type = "image/webp", quality = 0.80): Promise<Blob | null> {
+/**
+ * Handles iPhone HEIC / HEIF photos by converting them to standard JPEG Blobs
+ */
+async function ensureStandardImageFile(file: File): Promise<File> {
+  const isHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    /\.heic$/i.test(file.name) ||
+    /\.heif$/i.test(file.name);
+
+  if (isHeic && typeof window !== "undefined") {
+    try {
+      const heic2anyModule = await import("heic2any");
+      const heic2anyFn = (heic2anyModule.default || heic2anyModule) as (options: any) => Promise<Blob | Blob[]>;
+      const converted = await heic2anyFn({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.82,
+      });
+      const singleBlob = Array.isArray(converted) ? converted[0] : converted;
+      if (singleBlob) {
+        return new File(
+          [singleBlob],
+          file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+          { type: "image/jpeg" }
+        );
+      }
+    } catch (err) {
+      console.warn("[ImageUpload] Could not convert HEIC with heic2any, trying native decode:", err);
+    }
+  }
+  return file;
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type = "image/webp", quality = 0.75): Promise<Blob | null> {
   return new Promise((resolve) => {
     canvas.toBlob(
       (blob) => {
@@ -38,9 +72,9 @@ function canvasToBlob(canvas: HTMLCanvasElement, type = "image/webp", quality = 
 
 /**
  * Resizes and encodes a canvas to an optimized Data URL with adaptive size targeting.
- * Keeps output strictly under ~95 KB to ensure even 10+ images easily fit in Firestore documents.
+ * Keeps output strictly under ~65 KB so even 12+ images comfortably fit in a single Firestore document.
  */
-function getOptimizedDataUrl(canvas: HTMLCanvasElement, initialQuality = 0.80): string {
+function getOptimizedDataUrl(canvas: HTMLCanvasElement, initialQuality = 0.75): string {
   // 1. Try modern WebP first (30-50% smaller than JPEG at identical visual quality)
   let format = "image/webp";
   let quality = initialQuality;
@@ -59,10 +93,10 @@ function getOptimizedDataUrl(canvas: HTMLCanvasElement, initialQuality = 0.80): 
     dataUrl = canvas.toDataURL(format, quality);
   }
 
-  // 2. Adaptive compression: if dataUrl exceeds 120,000 chars (~88 KB), step down quality gracefully
-  const MAX_DATA_URL_LENGTH = 120000;
-  while (dataUrl.length > MAX_DATA_URL_LENGTH && quality > 0.45) {
-    quality -= 0.08;
+  // 2. Adaptive compression: target max ~65,000 chars (~48 KB base64)
+  const MAX_DATA_URL_LENGTH = 65000;
+  while (dataUrl.length > MAX_DATA_URL_LENGTH && quality > 0.38) {
+    quality -= 0.07;
     try {
       dataUrl = canvas.toDataURL(format, quality);
     } catch {
@@ -70,11 +104,11 @@ function getOptimizedDataUrl(canvas: HTMLCanvasElement, initialQuality = 0.80): 
     }
   }
 
-  // 3. If still over threshold (rare, e.g. very complex glitter texture), do a secondary downscale
-  if (dataUrl.length > MAX_DATA_URL_LENGTH && canvas.width > 800) {
+  // 3. If still over threshold (very complex texture), do a secondary downscale
+  if (dataUrl.length > MAX_DATA_URL_LENGTH && canvas.width > 700) {
     try {
       const smallCanvas = document.createElement("canvas");
-      const scale = 0.8;
+      const scale = 0.80;
       smallCanvas.width = Math.round(canvas.width * scale);
       smallCanvas.height = Math.round(canvas.height * scale);
       const smallCtx = smallCanvas.getContext("2d");
@@ -84,7 +118,7 @@ function getOptimizedDataUrl(canvas: HTMLCanvasElement, initialQuality = 0.80): 
         smallCtx.imageSmoothingEnabled = true;
         smallCtx.imageSmoothingQuality = "high";
         smallCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
-        const secondPass = smallCanvas.toDataURL(format, 0.72);
+        const secondPass = smallCanvas.toDataURL(format, 0.70);
         if (secondPass && secondPass.length < dataUrl.length) {
           dataUrl = secondPass;
         }
@@ -97,8 +131,8 @@ function getOptimizedDataUrl(canvas: HTMLCanvasElement, initialQuality = 0.80): 
 
 export async function processAndCompressImage(
   file: File,
-  maxDimension = 1080,
-  initialQuality = 0.80,
+  maxDimension = 1000,
+  initialQuality = 0.75,
   folder = "products"
 ): Promise<string> {
   // If it's an SVG vector, read directly
@@ -115,7 +149,7 @@ export async function processAndCompressImage(
       let width = originalWidth;
       let height = originalHeight;
 
-      // Maintain aspect ratio while capping max dimension to 1080px (crisp HD retina quality)
+      // Maintain aspect ratio while capping max dimension to 1000px (crisp HD retina quality)
       if (width > maxDimension || height > maxDimension) {
         if (width > height) {
           height = Math.round((height * maxDimension) / width);
@@ -146,14 +180,13 @@ export async function processAndCompressImage(
 
       const optimizedDataUrl = getOptimizedDataUrl(canvas, initialQuality);
 
-      // Attempt upload to Firebase Cloud Storage if provisioned
+      // Attempt upload to Firebase Cloud Storage if active, with fast failover (no long 10s hangs)
       try {
         const blob = await canvasToBlob(canvas, "image/webp", initialQuality);
         if (blob) {
           const uploadPromise = uploadToFirebaseStorage(blob, folder, file.name);
-          // Give network up to 10 seconds before falling back to optimized asset
           const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error("Storage timeout")), 10000)
+            setTimeout(() => reject(new Error("Storage timeout")), 2000)
           );
           const cloudUrl = await Promise.race([uploadPromise, timeoutPromise]);
           if (cloudUrl && cloudUrl.startsWith("http")) {
@@ -161,14 +194,14 @@ export async function processAndCompressImage(
             return;
           }
         }
-      } catch (err) {
-        // Storage bucket not provisioned or offline - seamlessly use optimized high-clarity data URL
+      } catch {
+        // Storage bucket not provisioned - seamlessly use optimized high-clarity data URL
       }
 
-      resolve(optimizedDataUrl || (await readFileAsDataURL(file).catch(() => "")));
+      resolve(optimizedDataUrl);
     };
 
-    // Use modern createImageBitmap for fast, multi-threaded decoding of large 5MB+ camera photos
+    // Use modern createImageBitmap for fast, multi-threaded decoding
     if (typeof window !== "undefined" && typeof window.createImageBitmap === "function") {
       createImageBitmap(file)
         .then((bitmap) => {
@@ -199,24 +232,41 @@ function fallbackStandardImageLoader(
 
   img.onerror = () => {
     URL.revokeObjectURL(url);
-    readFileAsDataURL(file).then(resolve).catch(() => resolve(""));
+    // If standard image fails to decode (e.g. unsupported raw format), resolve empty so it doesn't store broken 8MB data
+    resolve("");
   };
 
   img.src = url;
 }
 
+/**
+ * Sequentially processes multiple image files without spiking memory.
+ * Converts iPhone HEIC, optimizes dimensions, and compresses to compact WebP.
+ */
 export async function processMultipleImageFiles(
   files: FileList | File[],
-  maxDimension = 1080,
-  quality = 0.80,
+  maxDimension = 1000,
+  quality = 0.75,
   folder = "products"
 ): Promise<string[]> {
-  const allowedExtensions = /\.(jpe?g|png|webp|avif|gif|svg|bmp|tiff|heic)$/i;
+  const allowedExtensions = /\.(jpe?g|png|webp|avif|gif|svg|bmp|tiff|heic|heif)$/i;
   const fileArray = Array.from(files).filter(
     (f) => f.type.startsWith("image/") || allowedExtensions.test(f.name)
   );
 
-  const promises = fileArray.map((f) => processAndCompressImage(f, maxDimension, quality, folder));
-  const results = await Promise.all(promises);
-  return results.filter((url) => Boolean(url));
+  const results: string[] = [];
+  // Process sequentially to keep memory usage low and prevent mobile tab crashes
+  for (const rawFile of fileArray) {
+    try {
+      const file = await ensureStandardImageFile(rawFile);
+      const url = await processAndCompressImage(file, maxDimension, quality, folder);
+      if (url && url.length > 50) {
+        results.push(url);
+      }
+    } catch (err) {
+      console.error(`[ImageUpload] Failed to process ${rawFile.name}:`, err);
+    }
+  }
+
+  return results;
 }

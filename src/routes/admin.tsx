@@ -1947,14 +1947,14 @@ function AdminPage() {
                     <input
                       type="file"
                       multiple
-                      accept="image/*"
+                      accept="image/*,.heic,.HEIC,.jpg,.jpeg,.png,.webp,.jfif,.avif"
                       disabled={isUploadingImages}
                       className="hidden"
                       onChange={async (e) => {
                         if (e.target.files && e.target.files.length > 0) {
                           setIsUploadingImages(true);
                           try {
-                            const newUrls = await processMultipleImageFiles(e.target.files, 1080, 0.80, 'products');
+                            const newUrls = await processMultipleImageFiles(e.target.files, 1000, 0.75, 'products');
                             if (newUrls.length > 0) {
                               setFormData((prev) => {
                                 const hasOnlyPreset = prev.images.every((img) => PRESET_IMAGES.some((p) => p.url === img));
@@ -1967,6 +1967,8 @@ function AdminPage() {
                                 };
                               });
                               showProductToast(`Added ${newUrls.length} photo(s) successfully!`);
+                            } else {
+                              showProductToast("Could not decode selected photo(s). Please choose standard JPG, PNG, or HEIC images.");
                             }
                           } catch (err) {
                             console.error("Image upload failed:", err);
@@ -2451,13 +2453,13 @@ function AdminPage() {
                   <input
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/*,.heic,.HEIC,.jpg,.jpeg,.png,.webp,.jfif,.avif"
                     className="hidden"
                     onChange={async (e) => {
                       if (e.target.files && e.target.files.length > 0) {
                         setIsUploadingReviewPhotos(true);
                         try {
-                          const urls = await processMultipleImageFiles(e.target.files, 1080, 0.80, 'reviews');
+                          const urls = await processMultipleImageFiles(e.target.files, 1000, 0.75, 'reviews');
                           setReviewFormData((prev) => ({
                             ...prev,
                             images: [...prev.images, ...urls],
