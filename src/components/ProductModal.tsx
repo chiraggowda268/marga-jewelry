@@ -936,7 +936,7 @@ export function ProductModal() {
         {/* ============================================================== */}
         {/* FIXED BOTTOM ACTION BAR: ALWAYS VISIBLE - NEVER SCROLL TO BUY */}
         {/* ============================================================== */}
-          <div className="sticky bottom-0 z-30 shrink-0 border-t border-border bg-ivory/95 backdrop-blur-md px-4 py-3 sm:px-8 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+          <div className="sticky bottom-0 z-30 shrink-0 border-t border-border bg-ivory/95 backdrop-blur-md px-3 py-2.5 sm:px-8 sm:py-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
             <div className="mx-auto flex items-center justify-between gap-3">
               {/* Product Price & Discount preview */}
               <div className="flex flex-col shrink-0">

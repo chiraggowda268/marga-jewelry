@@ -98,18 +98,18 @@ function AccountPage() {
   // If user is not logged in, render the Auth Form
   if (!currentUser) {
     return (
-      <section className="mx-auto max-w-lg px-4 py-16">
-        <div className="text-center mb-8">
-          <p className="eyebrow text-gold">Welcome to Marga</p>
-          <h1 className="mt-2 text-3xl font-serif text-petrol md:text-4xl">Client Account</h1>
-          <p className="mt-2 text-xs text-muted-foreground">
+      <section className="mx-auto max-w-lg px-4 py-6 sm:py-10 md:py-16">
+        <div className="text-center mb-5 sm:mb-8">
+          <p className="eyebrow text-xs text-gold uppercase tracking-wider">Welcome to Marga</p>
+          <h1 className="mt-1.5 text-2xl sm:text-3xl font-serif text-petrol md:text-4xl">Client Account</h1>
+          <p className="mt-1.5 text-xs text-muted-foreground">
             Sign in to track orders, manage your wishlist, and enjoy express checkout.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm">
           {/* Tabs */}
-          <div className="flex border-b border-border mb-6">
+          <div className="flex border-b border-border mb-5 sm:mb-6">
             <button
               onClick={() => {
                 setAuthTab("login");
@@ -245,24 +245,24 @@ function AccountPage() {
   const wishedProducts = products.filter((p) => wishlist.includes(p.id));
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12 md:px-8">
+    <section className="mx-auto max-w-6xl px-4 py-6 sm:py-8 md:px-8 md:py-12">
       {/* Account Overview Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl bg-petrol p-6 md:p-8 text-ivory shadow-md">
-        <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-full bg-butter text-petrol font-serif text-2xl font-bold">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl bg-petrol p-4 sm:p-6 md:p-8 text-ivory shadow-md">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="grid h-12 w-12 sm:h-16 sm:w-16 place-items-center rounded-full bg-butter text-petrol font-serif text-xl sm:text-2xl font-bold shrink-0">
             {currentUser.name.charAt(0).toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-serif text-2xl md:text-3xl">{currentUser.name}</h1>
+              <h1 className="font-serif text-xl sm:text-2xl md:text-3xl">{currentUser.name}</h1>
               {currentUser.role === "admin" && (
-                <span className="rounded-full bg-butter px-2.5 py-0.5 text-[10px] font-bold uppercase text-petrol">
+                <span className="rounded-full bg-butter px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase text-petrol">
                   Admin
                 </span>
               )}
             </div>
             <p className="text-xs text-ivory/80">{currentUser.email}</p>
-            {currentUser.phone && <p className="text-xs text-ivory/60">{currentUser.phone}</p>}
+            {currentUser.phone && <p className="text-[11px] sm:text-xs text-ivory/60">{currentUser.phone}</p>}
           </div>
         </div>
 
@@ -270,53 +270,53 @@ function AccountPage() {
           {currentUser.role === "admin" && (
             <Link
               to="/admin"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-butter px-4 py-2 eyebrow text-xs text-petrol hover:bg-gold transition-colors font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-butter px-3 sm:px-4 py-1.5 sm:py-2 eyebrow text-xs text-petrol hover:bg-gold transition-colors font-semibold"
             >
-              <ShieldAlert size={16} /> Admin Portal
+              <ShieldAlert size={15} /> Admin Portal
             </Link>
           )}
           <button
             onClick={logout}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ivory/30 px-4 py-2 eyebrow text-xs text-ivory hover:bg-ivory/10 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ivory/30 px-3 sm:px-4 py-1.5 sm:py-2 eyebrow text-xs text-ivory hover:bg-ivory/10 transition-colors"
           >
-            <LogOut size={16} /> Sign Out
+            <LogOut size={15} /> Sign Out
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mt-8 flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
+      <div className="mt-5 sm:mt-8 flex gap-1 sm:gap-2 border-b border-border overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab("orders")}
-          className={`flex items-center gap-2 border-b-2 px-5 py-3 eyebrow text-xs transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 eyebrow text-[11px] sm:text-xs transition-colors whitespace-nowrap ${
             activeTab === "orders"
               ? "border-petrol text-petrol font-semibold"
               : "border-transparent text-muted-foreground hover:text-charcoal"
           }`}
         >
-          <Package size={16} /> My Orders ({userOrders.length})
+          <Package size={15} /> My Orders ({userOrders.length})
         </button>
 
         <button
           onClick={() => setActiveTab("wishlist")}
-          className={`flex items-center gap-2 border-b-2 px-5 py-3 eyebrow text-xs transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 eyebrow text-[11px] sm:text-xs transition-colors whitespace-nowrap ${
             activeTab === "wishlist"
               ? "border-petrol text-petrol font-semibold"
               : "border-transparent text-muted-foreground hover:text-charcoal"
           }`}
         >
-          <Heart size={16} /> Wishlist ({wishedProducts.length})
+          <Heart size={15} /> Wishlist ({wishedProducts.length})
         </button>
 
         <button
           onClick={() => setActiveTab("profile")}
-          className={`flex items-center gap-2 border-b-2 px-5 py-3 eyebrow text-xs transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 eyebrow text-[11px] sm:text-xs transition-colors whitespace-nowrap ${
             activeTab === "profile"
               ? "border-petrol text-petrol font-semibold"
               : "border-transparent text-muted-foreground hover:text-charcoal"
           }`}
         >
-          <MapPin size={16} /> Addresses & Profile
+          <MapPin size={15} /> Profile & Address
         </button>
       </div>
 

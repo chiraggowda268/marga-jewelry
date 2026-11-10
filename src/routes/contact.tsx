@@ -23,7 +23,7 @@ function Contact() {
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  const field = "h-12 w-full rounded-lg border border-input bg-card px-4 text-sm text-charcoal outline-none focus:border-gold transition-colors";
+  const field = "h-10 sm:h-12 w-full rounded-lg border border-input bg-card px-3 sm:px-4 text-xs sm:text-sm text-charcoal outline-none focus:border-gold transition-colors";
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -40,18 +40,18 @@ function Contact() {
   };
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-16 md:px-8">
+    <section className="mx-auto max-w-4xl px-4 py-6 sm:py-10 md:py-16 md:px-8">
       <div className="text-center">
-        <p className="eyebrow text-gold">Client Services</p>
-        <h1 className="mt-2 text-4xl text-petrol md:text-5xl">We're Here For You</h1>
-        <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+        <p className="eyebrow text-xs text-gold uppercase tracking-wider">Client Services</p>
+        <h1 className="mt-1.5 text-2xl sm:text-3xl md:text-5xl font-serif text-petrol">We're Here For You</h1>
+        <p className="mt-2 text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
           Have questions about sizing, materials, or order status? Our concierge team is at your service.
         </p>
       </div>
 
-      <div className="mt-12 grid gap-10 md:grid-cols-5 items-start">
+      <div className="mt-6 sm:mt-10 grid gap-5 sm:gap-8 md:gap-10 md:grid-cols-5 items-start">
         {/* Contact details */}
-        <div className="md:col-span-2 space-y-6 rounded-2xl bg-muted/60 p-6 md:p-8">
+        <div className="md:col-span-2 space-y-4 sm:space-y-6 rounded-2xl bg-muted/60 p-4 sm:p-6 md:p-8">
           <div>
             <h3 className="font-serif text-xl text-petrol mb-1">Direct Concierge</h3>
             <p className="text-xs text-muted-foreground">Monday – Saturday: 10:00 AM – 7:00 PM IST</p>

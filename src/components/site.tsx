@@ -515,7 +515,7 @@ export function ProductCard({ p }: { p: Product }) {
           />
 
           {p.badge && (
-            <span className="absolute left-2.5 top-2.5 rounded-full bg-butter px-2.5 py-0.5 eyebrow text-[9px] font-semibold text-petrol shadow-xs">
+            <span className="absolute left-2 top-2 rounded-full bg-butter px-2 py-0.5 eyebrow text-[8px] sm:text-[9px] font-semibold text-petrol shadow-xs">
               {p.badge}
             </span>
           )}
@@ -526,10 +526,10 @@ export function ProductCard({ p }: { p: Product }) {
               e.stopPropagation();
               toggleWish(p.id);
             }}
-            className="absolute right-2 top-2 grid h-10 w-10 place-items-center rounded-full bg-ivory/80 text-petrol hover:bg-ivory transition-colors"
+            className="absolute right-2 top-2 grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full bg-ivory/85 text-petrol hover:bg-ivory transition-colors shadow-2xs"
           >
             <Heart
-              size={18}
+              size={15}
               strokeWidth={1.5}
               className={wished ? "fill-petrol text-petrol" : ""}
             />
@@ -540,29 +540,29 @@ export function ProductCard({ p }: { p: Product }) {
               e.stopPropagation();
               addToCart(p.id);
             }}
-            className="absolute inset-x-0 bottom-0 h-11 bg-petrol eyebrow text-ivory opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+            className="absolute inset-x-0 bottom-0 h-9 sm:h-10 bg-petrol eyebrow text-[11px] sm:text-xs text-ivory opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5"
           >
-            <ShoppingBag size={16} />
-            Add to Bag
+            <ShoppingBag size={14} />
+            <span>Add to Bag</span>
           </button>
         </div>
 
-        <div className="mt-3 text-center">
+        <div className="mt-2 sm:mt-2.5 text-center">
           <p
             onClick={() => setQuickViewProduct(p)}
-            className="cursor-pointer font-serif text-lg text-charcoal hover:text-petrol transition-colors line-clamp-1"
+            className="cursor-pointer font-serif text-xs sm:text-sm md:text-base text-charcoal hover:text-petrol transition-colors line-clamp-1"
           >
             {p.name}
           </p>
-          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-1 mt-0.5 text-[11px] sm:text-xs text-muted-foreground">
             <span className="text-amber-500">★</span>
             <span className="font-medium text-charcoal">{p.rating || 4.9}</span>
-            <span className="text-[11px]">({p.reviewsCount || (p.reviews ? p.reviews.length : 7)})</span>
+            <span className="text-[10px] sm:text-[11px]">({p.reviewsCount || (p.reviews ? p.reviews.length : 7)})</span>
           </div>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <span className="text-sm font-medium text-petrol">{formatINR(p.price)}</span>
+          <div className="flex items-center justify-center gap-1.5 mt-0.5">
+            <span className="text-xs sm:text-sm font-semibold text-petrol">{formatINR(p.price)}</span>
             {p.originalPrice && (
-              <span className="text-xs text-muted-foreground line-through">
+              <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                 {formatINR(p.originalPrice)}
               </span>
             )}
@@ -586,16 +586,16 @@ export function Footer() {
     setEmail("");
   };
 
-  const col = "eyebrow mb-2.5 md:mb-4 text-gold text-xs";
-  const link = "block py-1 md:py-1.5 text-xs md:text-sm text-ivory/80 hover:text-butter transition-colors";
+  const col = "eyebrow mb-2 text-gold text-[11px] sm:text-xs uppercase font-medium";
+  const link = "block py-0.5 sm:py-1 text-xs text-ivory/80 hover:text-butter transition-colors";
 
   return (
     <footer className="bg-petrol text-ivory">
-      <div className="mx-auto grid max-w-7xl gap-6 md:gap-10 px-5 py-8 md:px-8 md:py-14 md:grid-cols-[1.2fr_1fr_1fr_1.6fr]">
+      <div className="mx-auto grid max-w-7xl gap-5 md:gap-10 px-4 py-6 sm:py-8 md:px-8 md:py-12 md:grid-cols-[1.2fr_1fr_1fr_1.6fr]">
         {/* Brand Summary */}
         <div>
-          <Logo light className="h-10 md:h-14 w-auto" />
-          <p className="mt-2.5 md:mt-4 max-w-xs text-xs md:text-sm text-ivory/70 leading-relaxed">
+          <Logo light className="h-9 sm:h-11 md:h-13 w-auto" />
+          <p className="mt-2 max-w-xs text-xs text-ivory/70 leading-relaxed">
             Everyday fine jewelry, designed to be worn, stacked, and loved for a lifetime.
           </p>
         </div>
@@ -614,18 +614,18 @@ export function Footer() {
 
           <div>
             <p className={col}>Customer Care</p>
-            <Link to="/account" className={link}>My Account & Orders</Link>
-            <Link to="/contact" className={link}>Contact & Inquiries</Link>
+            <Link to="/account" className={link}>My Orders</Link>
+            <Link to="/contact" className={link}>Contact Us</Link>
             <Link to="/about" className={link}>Our Story</Link>
-            <Link to="/contact" className={link}>Shipping & Hassle-Free Returns</Link>
+            <Link to="/contact" className={link}>Returns & Policy</Link>
           </div>
         </div>
 
         {/* Newsletter & Socials */}
         <div>
-          <p className={col}>Join our newsletter</p>
-          <p className="mb-3 md:mb-4 text-xs md:text-sm text-ivory/70">
-            Exclusive releases, style edits, and stories, delivered directly to your inbox.
+          <p className={col}>Newsletter</p>
+          <p className="mb-2.5 text-xs text-ivory/70">
+            Exclusive releases & style edits directly to your inbox.
           </p>
           <form onSubmit={submit} noValidate className="flex w-full">
             <input
@@ -634,22 +634,22 @@ export function Footer() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
               aria-label="Email"
-              className="h-10 md:h-12 min-w-0 flex-1 rounded-l-lg border border-ivory/30 bg-transparent px-3 md:px-4 text-xs md:text-sm text-ivory placeholder:text-ivory/50 outline-none focus:border-gold"
+              className="h-9 sm:h-10 min-w-0 flex-1 rounded-l-lg border border-ivory/30 bg-transparent px-3 text-xs text-ivory placeholder:text-ivory/50 outline-none focus:border-gold"
             />
-            <button className="h-10 md:h-12 shrink-0 rounded-r-lg bg-butter px-3.5 md:px-5 eyebrow text-xs md:text-sm text-petrol hover:bg-gold transition-colors">
-              Subscribe
+            <button className="h-9 sm:h-10 shrink-0 rounded-r-lg bg-butter px-3 sm:px-4 eyebrow text-xs text-petrol hover:bg-gold transition-colors font-medium">
+              Join
             </button>
           </form>
-          {msg && <p className={`mt-2 text-xs md:text-sm ${msg.ok ? "text-butter" : "text-gold"}`}>{msg.t}</p>}
-          <div className="mt-4 md:mt-6 flex gap-2">
+          {msg && <p className={`mt-1.5 text-xs ${msg.ok ? "text-butter" : "text-gold"}`}>{msg.t}</p>}
+          <div className="mt-3 sm:mt-4 flex gap-2">
             <a
               href="https://www.instagram.com/margajewelryy/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow Marga Jewelry on Instagram"
-              className="grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
+              className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
             >
-              <Instagram size={16} strokeWidth={1.5} />
+              <Instagram size={14} strokeWidth={1.5} />
             </a>
             {[Facebook, Youtube].map((I, i) => (
               <a
@@ -658,15 +658,15 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Social"
-                className="grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
+                className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full border border-ivory/30 hover:border-gold hover:text-gold transition-colors"
               >
-                <I size={16} strokeWidth={1.5} />
+                <I size={14} strokeWidth={1.5} />
               </a>
             ))}
           </div>
         </div>
       </div>
-      <div className="border-t border-ivory/15 py-3 md:py-4 text-center text-[11px] md:text-xs text-ivory/60">
+      <div className="border-t border-ivory/15 py-2.5 sm:py-3 text-center text-[10px] sm:text-xs text-ivory/60">
         © 2026 Marga Jewelry. All rights reserved.
       </div>
     </footer>

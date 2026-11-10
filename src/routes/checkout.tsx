@@ -334,26 +334,26 @@ function CheckoutPage() {
     "h-11 w-full rounded-lg border border-input bg-ivory px-3 text-sm text-charcoal outline-none focus:border-gold transition-colors";
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-      <div className="mb-8">
-        <p className="eyebrow text-gold">Final Step</p>
-        <h1 className="font-serif text-3xl text-petrol md:text-4xl">Secure Checkout</h1>
+    <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8 md:px-8 md:py-12">
+      <div className="mb-5 sm:mb-8">
+        <p className="eyebrow text-xs text-gold uppercase tracking-wider">Final Step</p>
+        <h1 className="font-serif text-2xl sm:text-3xl text-petrol md:text-4xl">Secure Checkout</h1>
       </div>
 
-      <div className="grid gap-10 lg:grid-cols-12 items-start">
+      <div className="grid gap-6 lg:gap-10 lg:grid-cols-12 items-start">
         {/* Left Column (7 Cols): Account Gate OR Shipping & Payment Form */}
-        <div className="lg:col-span-7 space-y-8">
+        <div className="lg:col-span-7 space-y-6 sm:space-y-8">
           {/* ============================================================== */}
           {/* GATE: IF USER IS NOT LOGGED IN, REQUIRE LOGIN FIRST */}
           {/* ============================================================== */}
           {!currentUser ? (
-            <div className="rounded-2xl border-2 border-gold/60 bg-card p-6 md:p-8 shadow-md space-y-6 animate-in fade-in duration-200">
-              <div className="flex items-start gap-4 border-b border-border pb-5">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-butter text-petrol">
-                  <Lock size={24} />
+            <div className="rounded-2xl border-2 border-gold/60 bg-card p-4 sm:p-6 md:p-8 shadow-md space-y-5 sm:space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-start gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
+                <div className="grid h-10 w-10 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-xl bg-butter text-petrol">
+                  <Lock size={20} />
                 </div>
                 <div>
-                  <h2 className="font-serif text-2xl text-petrol">Sign In Required to Order</h2>
+                  <h2 className="font-serif text-xl sm:text-2xl text-petrol">Sign In Required to Order</h2>
                   <p className="text-xs text-muted-foreground mt-1">
                     To safeguard your fine jewelry purchase, manage delivery tracking, and provide order security, you must be signed in to complete your checkout.
                   </p>
@@ -361,7 +361,7 @@ function CheckoutPage() {
               </div>
 
               {/* In-page Login / Signup Tabs */}
-              <div className="border border-border rounded-xl p-5 bg-ivory/50">
+              <div className="border border-border rounded-xl p-3.5 sm:p-5 bg-ivory/50">
                 <div className="flex border-b border-border mb-4">
                   <button
                     type="button"
