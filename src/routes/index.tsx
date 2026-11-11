@@ -64,7 +64,7 @@ function Index() {
 
       {/* Benefits */}
       <section className="border-y border-border bg-ivory">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-6 sm:py-8 md:grid-cols-4 md:gap-8 md:px-8 md:py-10">
+        <div className="no-scrollbar -mx-4 flex snap-x items-center justify-start sm:justify-around gap-6 overflow-x-auto px-5 py-4 md:mx-auto md:max-w-7xl md:grid md:grid-cols-4 md:gap-8 md:px-8 md:py-8">
           {[
             [Truck, "Free Shipping", "On all prepaid orders"],
             [Gem, "Skin Friendly", "Hypoallergenic finish"],
@@ -73,10 +73,12 @@ function Index() {
           ].map(([I, t, d]) => {
             const Icon = I as typeof Truck;
             return (
-              <div key={t as string} className="flex flex-col items-center text-center">
-                <Icon className="text-gold" size={22} strokeWidth={1.3} />
-                <p className="mt-2 font-serif text-sm sm:text-base text-petrol">{t as string}</p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground">{d as string}</p>
+              <div key={t as string} className="flex shrink-0 snap-center items-center gap-2.5 md:flex-col md:text-center">
+                <Icon className="text-gold shrink-0" size={20} strokeWidth={1.3} />
+                <div className="text-left md:text-center">
+                  <p className="font-serif text-xs sm:text-sm md:text-base text-petrol whitespace-nowrap">{t as string}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">{d as string}</p>
+                </div>
               </div>
             );
           })}

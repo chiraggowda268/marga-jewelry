@@ -574,73 +574,18 @@ export function ProductCard({ p }: { p: Product }) {
 }
 
 export function Footer() {
-  const [email, setEmail] = useState("");
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
-      return setMsg({ ok: false, t: "Please enter a valid email address." });
-    }
-    setMsg({ ok: true, t: "Thank you for subscribing!" });
-    setEmail("");
-  };
-
   const col = "eyebrow mb-2 text-gold text-[11px] sm:text-xs uppercase font-medium";
   const link = "block py-0.5 sm:py-1 text-xs text-ivory/80 hover:text-butter transition-colors";
 
   return (
     <footer className="bg-petrol text-ivory">
-      <div className="mx-auto grid max-w-7xl gap-5 md:gap-10 px-4 py-6 sm:py-8 md:px-8 md:py-12 md:grid-cols-[1.2fr_1fr_1fr_1.6fr]">
-        {/* Brand Summary */}
+      <div className="mx-auto grid max-w-7xl gap-5 md:gap-10 px-4 py-6 sm:py-8 md:px-8 md:py-10 md:grid-cols-[1.6fr_1fr_1fr]">
+        {/* Brand Summary & Socials */}
         <div>
           <Logo light className="h-9 sm:h-11 md:h-13 w-auto" />
           <p className="mt-2 max-w-xs text-xs text-ivory/70 leading-relaxed">
             Everyday fine jewelry, designed to be worn, stacked, and loved for a lifetime.
           </p>
-        </div>
-
-        {/* Navigation Links: 2-column grid on mobile to save vertical space */}
-        <div className="grid grid-cols-2 gap-4 md:contents">
-          <div>
-            <p className={col}>Shop</p>
-            <Link to="/shop" className={link}>All Jewelry</Link>
-            <Link to="/collections" className={link}>Collections</Link>
-            <Link to="/shop" search={{ category: "necklaces" }} className={link}>Necklaces</Link>
-            <Link to="/shop" search={{ category: "earrings" }} className={link}>Earrings</Link>
-            <Link to="/shop" search={{ category: "bracelets" }} className={link}>Bracelets</Link>
-            <Link to="/shop" search={{ category: "rings" }} className={link}>Rings</Link>
-          </div>
-
-          <div>
-            <p className={col}>Customer Care</p>
-            <Link to="/account" className={link}>My Orders</Link>
-            <Link to="/contact" className={link}>Contact Us</Link>
-            <Link to="/about" className={link}>Our Story</Link>
-            <Link to="/contact" className={link}>Returns & Policy</Link>
-          </div>
-        </div>
-
-        {/* Newsletter & Socials */}
-        <div>
-          <p className={col}>Newsletter</p>
-          <p className="mb-2.5 text-xs text-ivory/70">
-            Exclusive releases & style edits directly to your inbox.
-          </p>
-          <form onSubmit={submit} noValidate className="flex w-full">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
-              aria-label="Email"
-              className="h-9 sm:h-10 min-w-0 flex-1 rounded-l-lg border border-ivory/30 bg-transparent px-3 text-xs text-ivory placeholder:text-ivory/50 outline-none focus:border-gold"
-            />
-            <button className="h-9 sm:h-10 shrink-0 rounded-r-lg bg-butter px-3 sm:px-4 eyebrow text-xs text-petrol hover:bg-gold transition-colors font-medium">
-              Join
-            </button>
-          </form>
-          {msg && <p className={`mt-1.5 text-xs ${msg.ok ? "text-butter" : "text-gold"}`}>{msg.t}</p>}
           <div className="mt-3 sm:mt-4 flex gap-2">
             <a
               href="https://www.instagram.com/margajewelryy/"
@@ -663,6 +608,27 @@ export function Footer() {
                 <I size={14} strokeWidth={1.5} />
               </a>
             ))}
+          </div>
+        </div>
+
+        {/* Navigation Links: 2-column grid on mobile to save vertical space */}
+        <div className="grid grid-cols-2 gap-4 md:contents">
+          <div>
+            <p className={col}>Shop</p>
+            <Link to="/shop" className={link}>All Jewelry</Link>
+            <Link to="/collections" className={link}>Collections</Link>
+            <Link to="/shop" search={{ category: "necklaces" }} className={link}>Necklaces</Link>
+            <Link to="/shop" search={{ category: "earrings" }} className={link}>Earrings</Link>
+            <Link to="/shop" search={{ category: "bracelets" }} className={link}>Bracelets</Link>
+            <Link to="/shop" search={{ category: "rings" }} className={link}>Rings</Link>
+          </div>
+
+          <div>
+            <p className={col}>Customer Care</p>
+            <Link to="/account" className={link}>My Orders</Link>
+            <Link to="/contact" className={link}>Contact Us</Link>
+            <Link to="/about" className={link}>Our Story</Link>
+            <Link to="/contact" className={link}>Returns & Policy</Link>
           </div>
         </div>
       </div>
