@@ -4,19 +4,35 @@ import editorial from "@/assets/editorial.jpg";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — Marga Jewelry" },
-      { name: "description", content: "The story behind Marga Jewelry and our everyday designs." },
-      { property: "og:title", content: "About — Marga Jewelry" },
-      { property: "og:description", content: "The story behind Marga Jewelry." },
+      { title: "Our Story — Marga Jewelry" },
+      {
+        name: "description",
+        content:
+          "At Marga, we believe every occasion deserves something special. Our jewellery is thoughtfully selected to bring together beauty, elegance and timeless charm.",
+      },
+      { property: "og:title", content: "Our Story — Marga Jewelry" },
+      {
+        property: "og:description",
+        content:
+          "At Marga, we believe every occasion deserves something special. Our jewellery is thoughtfully selected to bring together beauty, elegance and timeless charm.",
+      },
     ],
   }),
   component: () => (
-    <section className="grid bg-butter md:grid-cols-2">
-      <img src={editorial} alt="Marga jewelry worn" className="h-56 sm:h-72 w-full object-cover md:h-[600px]" />
-      <div className="flex flex-col justify-center px-5 py-6 sm:py-10 md:px-16">
+    <section className="grid bg-ivory md:grid-cols-2">
+      <img
+        src={editorial}
+        alt="Marga jewelry worn"
+        className="h-64 sm:h-80 w-full object-cover md:h-[620px]"
+      />
+      <div className="flex flex-col justify-center px-6 py-8 sm:py-14 md:px-14 lg:px-20 bg-ivory">
         <p className="eyebrow text-xs text-gold uppercase tracking-wider">Our Story</p>
-        <h1 className="mt-2 text-2xl sm:text-3xl md:text-5xl font-serif text-petrol">Made for the path you walk</h1>
-        <p className="mt-3 max-w-md text-xs sm:text-sm md:text-base text-charcoal/80 leading-relaxed">“Marga” means path. Our pieces are designed to accompany you on yours — simple, refined, and made to be worn every single day.</p>
+        <h1 className="mt-3 font-serif text-3xl sm:text-4xl md:text-5xl text-petrol leading-tight">
+          Marga – A Touch of Elegance
+        </h1>
+        <p className="mt-5 max-w-xl text-sm sm:text-base text-charcoal/85 leading-relaxed">
+          At Marga, we believe every occasion deserves something special. Our jewellery is thoughtfully selected to bring together beauty, elegance and timeless charm. Each piece is chosen to make your celebrations brighter and your special moments even more memorable.
+        </p>
       </div>
     </section>
   ),

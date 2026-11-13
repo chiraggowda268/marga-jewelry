@@ -95,7 +95,7 @@ export function HeroSlider() {
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured Fine Jewelry Showcase"
-      className="group relative order-1 h-72 sm:h-96 w-full overflow-hidden bg-black/30 md:order-2 md:h-[540px] lg:h-[580px]"
+      className="group relative order-1 h-80 sm:h-[420px] w-full overflow-hidden bg-[#3f0f1b] md:order-2 md:h-[540px] lg:h-[600px]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -110,18 +110,26 @@ export function HeroSlider() {
         {slides.map((slide, idx) => (
           <div
             key={idx}
-            className="relative h-full w-full shrink-0"
+            className="relative h-full w-full shrink-0 flex items-center justify-center overflow-hidden bg-[#3f0f1b]"
             aria-hidden={current !== idx}
           >
+            {/* Ambient blurred satin backdrop to smoothly fill wider screens */}
+            <img
+              src={slide.src}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover scale-110 blur-xl opacity-65 pointer-events-none select-none"
+            />
+            {/* Centered, zoomed-out jewelry piece fully visible without cropping */}
             <img
               src={slide.src}
               alt={slide.alt}
               loading={idx === 0 ? "eager" : "lazy"}
               decoding="async"
-              className="h-full w-full object-cover object-center select-none"
+              className="relative z-10 h-full w-full object-contain object-center p-2 sm:p-4 md:p-6 select-none drop-shadow-sm"
             />
             {/* Subtle bottom vignette for controls visibility */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 via-black/15 to-transparent z-10" />
           </div>
         ))}
       </div>
@@ -131,7 +139,7 @@ export function HeroSlider() {
         type="button"
         onClick={prev}
         aria-label="Previous slide"
-        className="absolute left-3 top-1/2 -translate-y-1/2 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-petrol/60 text-ivory backdrop-blur-sm transition-all hover:bg-petrol hover:scale-105 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-petrol/70 text-ivory backdrop-blur-sm transition-all hover:bg-petrol hover:scale-105 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
@@ -141,13 +149,13 @@ export function HeroSlider() {
         type="button"
         onClick={next}
         aria-label="Next slide"
-        className="absolute right-3 top-1/2 -translate-y-1/2 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-petrol/60 text-ivory backdrop-blur-sm transition-all hover:bg-petrol hover:scale-105 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-petrol/70 text-ivory backdrop-blur-sm transition-all hover:bg-petrol hover:scale-105 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
       >
         <ChevronRight className="h-5 w-5" />
       </button>
 
       {/* Indicator Dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-10">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-20">
         {slides.map((_, idx) => (
           <button
             key={idx}
@@ -157,7 +165,7 @@ export function HeroSlider() {
             className={`transition-all duration-300 rounded-full ${
               current === idx
                 ? "w-6 h-1.5 sm:h-2 bg-butter shadow-sm"
-                : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-ivory/50 hover:bg-ivory/90"
+                : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-ivory/60 hover:bg-ivory/90"
             }`}
           />
         ))}

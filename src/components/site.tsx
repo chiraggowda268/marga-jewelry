@@ -584,7 +584,7 @@ export function Footer() {
         <div>
           <Logo light className="h-9 sm:h-11 md:h-13 w-auto" />
           <p className="mt-2 max-w-xs text-xs text-ivory/70 leading-relaxed">
-            Everyday fine jewelry, designed to be worn, stacked, and loved for a lifetime.
+            Thoughtfully chosen pieces to complete your special looks.
           </p>
           <div className="mt-3 sm:mt-4 flex gap-2">
             <a
@@ -618,9 +618,6 @@ export function Footer() {
             <Link to="/shop" className={link}>All Jewelry</Link>
             <Link to="/collections" className={link}>Collections</Link>
             <Link to="/shop" search={{ category: "necklaces" }} className={link}>Necklaces</Link>
-            <Link to="/shop" search={{ category: "earrings" }} className={link}>Earrings</Link>
-            <Link to="/shop" search={{ category: "bracelets" }} className={link}>Bracelets</Link>
-            <Link to="/shop" search={{ category: "rings" }} className={link}>Rings</Link>
           </div>
 
           <div>

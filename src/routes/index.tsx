@@ -37,15 +37,29 @@ function Index() {
       {/* Categories */}
       <section className="mx-auto max-w-7xl px-4 py-7 sm:py-12 md:px-8">
         <h2 className="text-center font-serif text-xl sm:text-2xl md:text-3xl text-petrol">Shop by Category</h2>
-        <div className="no-scrollbar -mx-4 mt-5 sm:mt-8 flex snap-x gap-4 sm:gap-6 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-6 md:px-0">
-          {categories.map((c) => (
-            <Link key={c.slug} to="/shop" search={{ category: c.slug }} className="group w-20 sm:w-24 shrink-0 snap-start text-center md:w-auto">
-              <div className="aspect-square overflow-hidden rounded-full border border-gold/50 p-0.5 sm:p-1">
-                <img src={c.image} alt={c.name} loading="lazy" className="h-full w-full rounded-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              </div>
-              <p className="mt-2 font-serif text-xs sm:text-sm md:text-base text-charcoal group-hover:text-petrol">{c.name}</p>
-            </Link>
-          ))}
+        <div className="mt-5 sm:mt-8 flex justify-center">
+          {categories
+            .filter((c) => c.slug === "necklaces")
+            .map((c) => (
+              <Link
+                key={c.slug}
+                to="/shop"
+                search={{ category: c.slug }}
+                className="group flex flex-col items-center text-center"
+              >
+                <div className="h-24 w-24 sm:h-32 sm:w-32 overflow-hidden rounded-full border-2 border-gold/60 p-1 shadow-sm transition-transform duration-500 group-hover:scale-105">
+                  <img
+                    src={c.image}
+                    alt={c.name}
+                    loading="lazy"
+                    className="h-full w-full rounded-full object-cover"
+                  />
+                </div>
+                <p className="mt-3 font-serif text-sm sm:text-base text-charcoal group-hover:text-petrol font-medium">
+                  {c.name}
+                </p>
+              </Link>
+            ))}
         </div>
       </section>
 
