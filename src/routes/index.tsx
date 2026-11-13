@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Truck, ShieldCheck, RefreshCw, Gem } from "lucide-react";
-import hero from "@/assets/hero.jpg";
 import { categories } from "@/lib/catalog";
 import { ProductCard } from "@/components/site";
+import { HeroSlider } from "@/components/HeroSlider";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -27,11 +27,11 @@ function Index() {
       <section className="grid bg-petrol md:grid-cols-2">
         <div className="order-2 flex flex-col justify-center px-5 py-7 sm:py-10 text-ivory md:order-1 md:px-16 lg:px-24">
           <p className="eyebrow text-xs sm:text-sm text-gold">New Collection</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-serif leading-snug">Jewelry for Every Moment of You</h1>
-          <p className="mt-2.5 sm:mt-4 max-w-md text-xs sm:text-sm md:text-base text-ivory/80 leading-relaxed">Delicate, modern pieces crafted to layer, stack and wear every day.</p>
+          <h1 className="mt-2 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-serif leading-snug">Beautiful designs for unforgettable occasions</h1>
+          <p className="mt-2.5 sm:mt-4 max-w-md text-xs sm:text-sm md:text-base text-ivory/80 leading-relaxed">Thoughtfully chosen pieces to complete your special looks.</p>
           <Link to="/collections" className={`${btn} mt-5 sm:mt-7 self-start`}>Explore Collection</Link>
         </div>
-        <img src={hero} alt="Layered gold necklaces" width={1280} height={1024} className="order-1 h-52 sm:h-72 w-full object-cover md:order-2 md:h-[540px]" />
+        <HeroSlider />
       </section>
 
       {/* Categories */}

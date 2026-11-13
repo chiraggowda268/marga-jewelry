@@ -74,7 +74,7 @@ function Contact() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Phone & WhatsApp</p>
-                <p className="font-medium">+91 98863 90483</p>
+                <p className="font-medium">+91 9483885657</p>
               </div>
             </div>
 
@@ -83,8 +83,8 @@ function Contact() {
                 <MapPin size={18} />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Studio & Showroom</p>
-                <p className="font-medium">201,Pearl Castle Aparment Banaswadi, Bangalore 560033</p>
+                <p className="text-xs text-muted-foreground">Studio</p>
+                <p className="font-medium">Banaswadi, Bangalore 560043</p>
               </div>
             </div>
 
